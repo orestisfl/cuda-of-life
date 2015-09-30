@@ -1,6 +1,7 @@
 #ifndef UTILS_H
 #define UTILS_H
 #include <stdint.h>
+#include <cuda_runtime.h>
 
 typedef uint64_t bboard;
 typedef unsigned int uint;
@@ -19,9 +20,20 @@ typedef unsigned int uint;
 
 #define CEIL_DIV(X, Y) (1 + (((X) - 1) / (Y)))
 
+#define POS(i,j) (i + WIDTH * j)
+
+#define SET_BOARD(val, i, j) val |= (ONE << POS(i, j))
+#define CLEAR_BOARD(val, i, j) val &= ~(ONE << POS(i, j))
+#define TOGGLE_BOARD(val, i, j) val ^= (ONE << POS(i, j))
+#define BOARD_IS_SET(val, i, j) ((val) & (ONE << POS(i, j)))
+
+#define UNUSED(x) ((void)x)
+
 extern void read_from_file(int* X, const char* filename, int dim);
 extern void save_table(int* X, int dim, const char* filename);
 extern void generate_table(int* X, int M, int N);
 extern void print_table(int* A, int M, int N);
 
+extern __global__ void convert_to_tiled(const int* d_table, bboard* d_a, const size_t dim, const size_t dim_board, const size_t pitch);
+extern __global__ void convert_from_tiled(int* d_table, const bboard* d_a, const size_t dim, const size_t dim_board, const size_t pitch);
 #endif

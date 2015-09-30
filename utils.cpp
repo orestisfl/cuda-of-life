@@ -34,8 +34,8 @@ void generate_table(int *X, int M, int N)
       }
   }
 
-  printf("Number of non zerow elements: %d\n", counter);
-  printf("Perncent: %f\n", (float)counter / (float)(M * N));
+  printf("Number of non zero elements: %d\n", counter);
+  printf("Percent: %f\n", (float)counter / (float)(M * N));
 }
 
 void print_table(int *A, int M, int N)
