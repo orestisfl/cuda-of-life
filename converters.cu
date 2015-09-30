@@ -7,13 +7,13 @@ void convert_from_tiled(int* d_table, const bboard* d_a, const size_t dim, const
     UNUSED(dim_board);
 
     // coordinates in the tiled table.
-    const int major_i = blockIdx.y * blockDim.y + threadIdx.y;
-    const int major_j = blockIdx.x * blockDim.x + threadIdx.x;
+    const int major_i = blockIdx.y * blockDim.y + threadIdx.y;  // row
+    const int major_j = blockIdx.x * blockDim.x + threadIdx.x;  // col
     if (major_i * WIDTH >= dim) return;
     if (major_j * WIDTH >= dim) return;
 
-    const bboard* row_a = (bboard*)((char*)d_a + major_j * pitch);
-    const bboard value = row_a[major_i];
+    const bboard* row_a = (bboard*)((char*)d_a + major_i * pitch);
+    const bboard value = row_a[major_j];
 
     for (int board_i = 0; board_i < WIDTH; board_i++){
         const int real_i = major_i * WIDTH + board_i;
@@ -31,13 +31,13 @@ __global__
 void convert_to_tiled(const int* d_table, bboard* d_a, const size_t dim, const size_t dim_board, const size_t pitch) {
     UNUSED(dim_board);
 
-    const int major_i = blockIdx.y * blockDim.y + threadIdx.y;
-    const int major_j = blockIdx.x * blockDim.x + threadIdx.x;
+    const int major_i = blockIdx.y * blockDim.y + threadIdx.y;  // row
+    const int major_j = blockIdx.x * blockDim.x + threadIdx.x;  // col
     if (major_i * WIDTH >= dim) return;
     if (major_j * WIDTH >= dim) return;
 
 
-    bboard* row_a = (bboard*)((char*)d_a + major_j * pitch);
+    bboard* row_a = (bboard*)((char*)d_a + major_i * pitch);
     bboard value = 0;
 
     for (int board_i = 0; board_i < WIDTH; board_i++){
@@ -52,5 +52,5 @@ void convert_to_tiled(const int* d_table, bboard* d_a, const size_t dim, const s
             }
         }
     }
-    row_a[major_i] = value;
+    row_a[major_j] = value;
 }
