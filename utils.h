@@ -27,19 +27,21 @@ typedef unsigned int uint;
 #define TOGGLE_BOARD(val, i, j) val ^= (ONE << POS(i, j))
 #define BOARD_IS_SET(val, i, j) ((bool)((val) & (ONE << POS(i, j))))
 
-#if (__CUDA_ARCH__ >= 200)
-#define CUDA_PRINT(...) printf(__VA_ARGS__)
+#if (__CUDA_ARCH__ >= 200) && defined(USE_CUDA_PRINT)
+    #define CUDA_PRINT(...) printf(__VA_ARGS__)
 #else
-#define CUDA_PRINT(...)
+    #define CUDA_PRINT(...)
 #endif
-
-#define UNUSED(x) ((void)x)
 
 extern void read_from_file(int* X, const char* filename, int dim);
 extern void save_table(int* X, int dim, const char* filename);
 extern void generate_table(int* X, int dim);
 extern void print_table(int* A, int dim);
 
-extern __global__ void convert_to_tiled(const int* d_table, bboard* d_a, const size_t dim, const size_t dim_board, const size_t pitch);
-extern __global__ void convert_from_tiled(int* d_table, const bboard* d_a, const size_t dim, const size_t dim_board, const size_t pitch);
+extern __global__ void convert_to_tiled(const int* d_table, bboard* d_a, const size_t dim,
+                                        const size_t dim_board, const size_t pitch);
+extern __global__ void convert_from_tiled(int* d_table, const bboard* d_a, const size_t dim,
+                                          const size_t dim_board, const size_t pitch);
+extern __global__ void calculate_next_generation(const bboard* d_a, bboard* d_result, const int dim,
+                                          const int dim_board, const size_t pitch);
 #endif

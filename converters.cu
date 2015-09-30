@@ -1,11 +1,9 @@
-#include <stdint.h>
+//#include <stdint.h>
 #include <cuda_runtime.h>
 #include "utils.h"
 
 __global__
 void convert_from_tiled(int* d_table, const bboard* d_a, const size_t dim, const size_t dim_board, const size_t pitch) {
-    UNUSED(dim_board);
-
     // coordinates in the tiled table.
     const int major_i = blockIdx.y * blockDim.y + threadIdx.y;  // row
     const int major_j = blockIdx.x * blockDim.x + threadIdx.x;  // col
@@ -29,8 +27,6 @@ void convert_from_tiled(int* d_table, const bboard* d_a, const size_t dim, const
 
 __global__
 void convert_to_tiled(const int* d_table, bboard* d_a, const size_t dim, const size_t dim_board, const size_t pitch) {
-    UNUSED(dim_board);
-
     const int major_i = blockIdx.y * blockDim.y + threadIdx.y;  // row
     const int major_j = blockIdx.x * blockDim.x + threadIdx.x;  // col
     if (major_i * WIDTH >= dim) return;
