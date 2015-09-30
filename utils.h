@@ -31,8 +31,8 @@ typedef unsigned int uint;
 
 extern void read_from_file(int* X, const char* filename, int dim);
 extern void save_table(int* X, int dim, const char* filename);
-extern void generate_table(int* X, int M, int N);
-extern void print_table(int* A, int M, int N);
+extern void generate_table(int* X, int dim);
+extern void print_table(int* A, int dim);
 
 extern __global__ void convert_to_tiled(const int* d_table, bboard* d_a, const size_t dim, const size_t dim_board, const size_t pitch);
 extern __global__ void convert_from_tiled(int* d_table, const bboard* d_a, const size_t dim, const size_t dim_board, const size_t pitch);

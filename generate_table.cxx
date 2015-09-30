@@ -13,7 +13,7 @@ int main(int argc, char **argv)
     int N = atoi(argv[1]);
     printf("Generating an %d x %d table\n", N, N);
     int* table = (int*) calloc(N, N * sizeof(int));
-    generate_table(table, N, N);
+    generate_table(table, N);
     char filename[20];
     sprintf(filename, "table%dx%d.bin", N, N);
     save_table(table, N, filename);
