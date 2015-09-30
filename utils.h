@@ -25,7 +25,7 @@ typedef unsigned int uint;
 #define SET_BOARD(val, i, j) val |= (ONE << POS(i, j))
 #define CLEAR_BOARD(val, i, j) val &= ~(ONE << POS(i, j))
 #define TOGGLE_BOARD(val, i, j) val ^= (ONE << POS(i, j))
-#define BOARD_IS_SET(val, i, j) ((val) & (ONE << POS(i, j)))
+#define BOARD_IS_SET(val, i, j) ((bool)((val) & (ONE << POS(i, j))))
 
 #define UNUSED(x) ((void)x)
 
