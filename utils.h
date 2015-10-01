@@ -6,6 +6,7 @@
 typedef uint64_t bboard;
 typedef unsigned int uint;
 #define ONE 1UL
+#define ZERO 0UL
 #define WIDTH 8
 #define DFL_RUNS 10
 #define THRESHOLD 0.4
