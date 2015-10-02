@@ -19,10 +19,8 @@ FILE(GLOB SOURCES "*.cu" "*.cpp" "*.h")
 set(CUDA_64_BIT_DEVICE_CODE ON)
 set(CUDA_VERBOSE_BUILD ON)
 
-LIST(APPEND CMAKE_CXX_FLAGS "-ffast-math -Wall -Wextra")
-LIST(APPEND CMAKE_CXX_FLAGS_RELEASE "-ffast-math -Wall -Wextra -O3")
-LIST(APPEND CMAKE_C_FLAGS_RELEASE "-ffast-math -Wall -Wextra -O3")
-LIST(APPEND CUDA_NVCC_FLAGS --compiler-options -fno-strict-aliasing -use_fast_math)
+set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ffast-math -Wall -Wextra")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} -O3")
 LIST(APPEND CUDA_NVCC_FLAGS_RELEASE -O3)
 LIST(APPEND CUDA_NVCC_FLAGS_DEBUG -O0 -g -G -pg -lineinfo -Xptxas -v)
 
