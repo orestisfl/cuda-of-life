@@ -37,7 +37,12 @@ void best_block_size(int* optx, int* opty) {
       (void*)calculate_next_generation,  0, 0);
 
   *optx = (int) ceil(sqrt(block_size));
-  *opty = *optx;
+
+  while (block_size % *optx) {
+    (*optx)--;
+  }
+
+  *opty = block_size / *optx;
 #else
   *optx = DEFAULT_OPTX;
   *opty = DEFAULT_OPTY;
