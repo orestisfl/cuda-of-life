@@ -16,11 +16,11 @@ __global__ void calculate_next_generation(const bboard* d_a,
                                           const size_t pitch,
                                           const int remaining_cells_w,
                                           const int remaining_cells_h
-                                          ) {
-    const int major_i = __mul24(blockIdx.y, blockDim.y) + threadIdx.y;  // row
-    const int major_j = __mul24(blockIdx.x, blockDim.x) + threadIdx.x;  // col
-    if (__mul24(major_i, HEIGHT) >= dim) return;
-    if (__mul24(major_j, WIDTH) >= dim) return;
+                                         ) {
+    const int major_j = __mul24(blockIdx.y, blockDim.y) + threadIdx.y;  // col
+    const int major_i = __mul24(blockIdx.x, blockDim.x) + threadIdx.x;  // row
+
+    if ((__mul24(major_j, WIDTH) >= dim) || (__mul24(major_i, HEIGHT) >= dim)) return;
 
     bboard neighbors[3][3];
     {
@@ -47,8 +47,8 @@ __global__ void calculate_next_generation(const bboard* d_a,
     const bool is_edge_u = (major_i == 0);
     const bool is_edge_l = (major_j == 0);
 
-    const int limit_i = HEIGHT - __mul24(remaining_cells_h, is_edge_d);
-    const int limit_j = WIDTH - __mul24(remaining_cells_w, is_edge_r);
+    const char limit_i = HEIGHT - __mul24(remaining_cells_h, is_edge_d);
+    const char limit_j = WIDTH - __mul24(remaining_cells_w, is_edge_r);
 
     bboard value = 0;
     for (char i = 0; i < limit_i; i++) {

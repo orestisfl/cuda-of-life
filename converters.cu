@@ -5,8 +5,8 @@
 __global__
 void convert_from_tiled(int* d_table, const bboard* d_a, const int dim, const size_t pitch) {
     // coordinates in the tiled table.
-    const int major_i = blockIdx.y * blockDim.y + threadIdx.y;  // row
-    const int major_j = blockIdx.x * blockDim.x + threadIdx.x;  // col
+    const int major_j = __mul24(blockIdx.y, blockDim.y) + threadIdx.y;  // col
+    const int major_i = __mul24(blockIdx.x, blockDim.x) + threadIdx.x;  // row
     if (major_i * HEIGHT >= dim) return;
     if (major_j * WIDTH >= dim) return;
 
@@ -27,8 +27,8 @@ void convert_from_tiled(int* d_table, const bboard* d_a, const int dim, const si
 
 __global__
 void convert_to_tiled(const int* d_table, bboard* d_a, const size_t dim, const size_t pitch) {
-    const int major_i = blockIdx.y * blockDim.y + threadIdx.y;  // row
-    const int major_j = blockIdx.x * blockDim.x + threadIdx.x;  // col
+    const int major_j = __mul24(blockIdx.y, blockDim.y) + threadIdx.y;  // col
+    const int major_i = __mul24(blockIdx.x, blockDim.x) + threadIdx.x;  // row
     if (major_i * HEIGHT >= dim) return;
     if (major_j * WIDTH >= dim) return;
 
