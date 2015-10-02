@@ -117,5 +117,9 @@ Thumbs.db
 *.plt
 *.cvdata
 
+CMakeLists.txt.user
+CMakeLists.txt.user.*
+
 !CMakeLists.txt
+
 bin/

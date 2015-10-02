@@ -37,26 +37,14 @@ void best_block_size(int* optx, int* opty) {
                                        (void*)calculate_next_generation,  0, 0);
 
     *optx = (int) ceil(sqrt(block_size));
-
-    while (block_size % *optx) {
-        (*optx)--;
-    }
-
-    *opty = block_size / *optx;
+    *opty = *optx;
     #else
     *optx = DEFAULT_OPTX;
     *opty = DEFAULT_OPTY;
     #endif
 }
 
-// fill array A with zeros
-__global__
-void zero_k(int* A, size_t dim) {
-    for (int i = 0; i < dim * dim; i ++) {
-        A[i] = 0;
-    }
-}
-
+#ifndef TESTING
 int main(int argc, char** argv) {
     if (argc < 3) {
         printf("usage: %s fname dim (iter blockx blocky gridx gridy)\n", argv[0]);
@@ -71,23 +59,31 @@ int main(int argc, char** argv) {
     const size_t mem_size = total_elements * sizeof(int);
     dim3 block;
     dim3 grid;
-    const int dim_board = CEIL_DIV(dim, WIDTH);
+    const int dim_board_w = CEIL_DIV(dim, WIDTH);
+    const int dim_board_h = CEIL_DIV(dim, HEIGHT);
 
-    if (argc >= 6) {
+    if (argc >= 7) {
         block.x = atoi(argv[4]);
-        block.y = block.x;
-        grid.x = atoi(argv[5]);
-        grid.y = grid.x;
+        block.y = atoi(argv[5]);
+        grid.x = atoi(argv[6]);
+        grid.y = atoi(argv[7]);
     } else {
         int optx, opty;
         best_block_size(&optx, &opty);
         fprintf(stderr, "opt=%d %d\n", optx, opty);
 
-        block.x = (dim_board < optx) ? dim_board : optx;
-        block.y = (dim_board < opty) ? dim_board : opty;
-        grid.x = CEIL_DIV(dim_board, block.x);
-        grid.y = CEIL_DIV(dim_board, block.y);
+        block.x = (dim_board_h < optx) ? dim_board_h : optx;
+        block.y = (dim_board_w < opty) ? dim_board_w : opty;
+        grid.x = CEIL_DIV(dim_board_h, block.x);
+        grid.y = CEIL_DIV(dim_board_w, block.y);
     }
+    cudaFree(0); // init device
+
+    //    const int remaining_blocks = remaining_dim / WIDTH; // for shared??
+    const int remaining_dim_h = grid.x * block.x * HEIGHT - dim;
+    const int remaining_dim_w = grid.y * block.y * WIDTH - dim;
+    const int remaining_cells_h = remaining_dim_h % HEIGHT;
+    const int remaining_cells_w = remaining_dim_w % WIDTH;
 
     char* filename = argv[1];
     fprintf(stderr,
@@ -107,16 +103,16 @@ int main(int argc, char** argv) {
     bboard* d_board;
     bboard* d_help;
     size_t pitch;
-    cudaMallocPitch((void**)&d_board, &pitch, dim_board * sizeof(bboard), dim_board);
+    cudaMallocPitch((void**)&d_board, &pitch, dim_board_w * sizeof(bboard), dim_board_h);
     cudaCheckErrors("device pitch allocation of GOL matrix failed", __FILE__, __LINE__);
-    cudaMallocPitch((void**)&d_help, &pitch, dim_board * sizeof(bboard), dim_board);
+    cudaMallocPitch((void**)&d_help, &pitch, dim_board_w * sizeof(bboard), dim_board_h);
     cudaCheckErrors("device pitch allocation of GOL matrix failed", __FILE__, __LINE__);
 
     cudaMemcpy(d_table, table, mem_size, cudaMemcpyHostToDevice);
     cudaCheckErrors("copy from host to device memory failed", __FILE__, __LINE__);
     free(table);
 
-    convert_to_tiled <<< grid, block >>> (d_table, d_board, dim, dim_board, pitch);
+    convert_to_tiled <<< grid, block >>> (d_table, d_board, dim, pitch);
     cudaCheckErrors("convert_to_tiled failed", __FILE__, __LINE__);
 
     // start timewatch
@@ -128,7 +124,10 @@ int main(int argc, char** argv) {
 
     //    zero_k <<< 1, 1 >>> (d_table, dim);
     for (int i = 0; i < n_runs; ++i) {
-        calculate_next_generation <<< grid, block>>> (d_board, d_help, dim, dim_board, pitch);
+        calculate_next_generation <<< grid, block>>> (d_board, d_help,
+                                                      dim, dim_board_w, dim_board_h, pitch,
+                                                      remaining_cells_w, remaining_cells_h
+                                                      );
         cudaCheckErrors("calculating next generation failed", __FILE__, __LINE__);
         swap_boards(&d_board, &d_help);
     }
@@ -141,7 +140,7 @@ int main(int argc, char** argv) {
     printf(ANSI_COLOR_RED"CUDA-new"ANSI_COLOR_RESET" time to run: "
            ANSI_COLOR_RED"%f"ANSI_COLOR_RESET" ms\n", time);
 
-    convert_from_tiled <<< grid, block >>> (d_table, d_board, dim, dim_board, pitch);
+    convert_from_tiled <<< grid, block >>> (d_table, d_board, dim, pitch);
     cudaCheckErrors("convert_from_tiled failed", __FILE__, __LINE__);
 
     table = (int*) malloc(mem_size);
@@ -156,3 +155,5 @@ int main(int argc, char** argv) {
 
     return 0;
 }
+
+#endif

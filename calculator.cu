@@ -8,63 +8,56 @@
 #define C_J 1
 #define R_J 2
 
-__global__ void calculate_next_generation(const bboard* d_a, bboard* d_result, const int dim,
-                                          const int dim_board, const size_t pitch) {
-    const int major_i = blockIdx.y * blockDim.y + threadIdx.y;  // row
-    const int major_j = blockIdx.x * blockDim.x + threadIdx.x;  // col
-    if (major_i * WIDTH >= dim) return;
-    if (major_j * WIDTH >= dim) return;
+__global__ void calculate_next_generation(const bboard* d_a,
+                                          bboard* d_result,
+                                          const int dim,
+                                          const int dim_board_w,
+                                          const int dim_board_h,
+                                          const size_t pitch,
+                                          const int remaining_cells_w,
+                                          const int remaining_cells_h
+                                         ) {
+    const int major_j = __mul24(blockIdx.y, blockDim.y) + threadIdx.y;  // col
+    const int major_i = __mul24(blockIdx.x, blockDim.x) + threadIdx.x;  // row
 
-    const int major_l = (major_j - 1 + dim_board) % dim_board;
-    const int major_r = (major_j + 1) % dim_board;
-    const int major_t = (major_i - 1 + dim_board) % dim_board;
-    const int major_b = (major_i + 1) % dim_board;
-
-    bboard* row_c = (bboard*)((char*)d_a + major_i * pitch);
-    bboard* row_t = (bboard*)((char*)d_a + major_t* pitch);
-    bboard* row_b = (bboard*)((char*)d_a + major_b * pitch);
+    if ((__mul24(major_j, WIDTH) >= dim) || (__mul24(major_i, HEIGHT) >= dim)) return;
 
     bboard neighbors[3][3];
-    neighbors[C_I][C_J] = row_c[major_j];
-    neighbors[C_I][L_J] = row_c[major_l];
-    neighbors[C_I][R_J] = row_c[major_r];
-    neighbors[T_I][C_J] = row_t[major_j];
-    neighbors[T_I][L_J] = row_t[major_l];
-    neighbors[T_I][R_J] = row_t[major_r];
-    neighbors[B_I][C_J] = row_b[major_j];
-    neighbors[B_I][L_J] = row_b[major_l];
-    neighbors[B_I][R_J] = row_b[major_r];
+    {
+        const int major_l = (major_j - 1 + dim_board_w) % dim_board_w;
+        const int major_r = (major_j + 1) % dim_board_w;
+        const int major_t = (major_i - 1 + dim_board_h) % dim_board_h;
+        const int major_b = (major_i + 1) % dim_board_h;
+        bboard* row_c = (bboard*)((char*)d_a + major_i * pitch);
+        bboard* row_t = (bboard*)((char*)d_a + major_t* pitch);
+        bboard* row_b = (bboard*)((char*)d_a + major_b * pitch);
+        neighbors[C_I][C_J] = row_c[major_j];
+        neighbors[C_I][L_J] = row_c[major_l];
+        neighbors[C_I][R_J] = row_c[major_r];
+        neighbors[T_I][C_J] = row_t[major_j];
+        neighbors[T_I][L_J] = row_t[major_l];
+        neighbors[T_I][R_J] = row_t[major_r];
+        neighbors[B_I][C_J] = row_b[major_j];
+        neighbors[B_I][L_J] = row_b[major_l];
+        neighbors[B_I][R_J] = row_b[major_r];
+    }
 
-    //TODO: move global?
-    const int remaining_dim = gridDim.x * blockDim.x * WIDTH - dim;
-    //    const int remaining_blocks = remaining_dim / WIDTH; // for shared??
-    const int remaining_cells = remaining_dim % WIDTH;
-    //    assert(remaining_dim >= 0);
-    //    assert(remaining_blocks >= 0);
-    //    assert(remaining_cells >= 0);
-
-    const bool is_edge_r = (major_j == dim_board - 1);
-    const bool is_edge_d = (major_i == dim_board - 1);
+    const bool is_edge_r = (major_j == dim_board_w - 1);
+    const bool is_edge_d = (major_i == dim_board_h - 1);
     const bool is_edge_u = (major_i == 0);
     const bool is_edge_l = (major_j == 0);
 
-    const int limit_i = WIDTH - remaining_cells * is_edge_d;
-    const int limit_j = WIDTH - remaining_cells * is_edge_r;
-
-    if (is_edge_d) CUDA_PRINT("%d %d is_edge_d\n", major_i, major_j);
-    if (is_edge_r) CUDA_PRINT("%d %d is_edge_r\n", major_i, major_j);
-    if (is_edge_u) CUDA_PRINT("%d %d is_edge_u\n", major_i, major_j);
-    if (is_edge_l) CUDA_PRINT("%d %d is_edge_l\n", major_i, major_j);
+    const char limit_i = HEIGHT - __mul24(remaining_cells_h, is_edge_d);
+    const char limit_j = WIDTH - __mul24(remaining_cells_w, is_edge_r);
 
     bboard value = 0;
-    int up_i, up_n, down_i, down_n;
-    int right_j, right_n;
-    uint first_cells, second_cells;
-    uint alive_cells, this_cell;
-    for (int i = 0; i < limit_i; i++) {
+    for (char i = 0; i < limit_i; i++) {
+        char up_i, up_n, down_i, down_n;
+        char first_cells, second_cells;
+        char alive_cells, this_cell;
 
         if (i == 0) {
-            up_i = WIDTH - 1 - remaining_cells * is_edge_u;
+            up_i = HEIGHT - 1 - remaining_cells_h * is_edge_u;
             up_n = T_I;
         } else {
             up_i = i - 1;
@@ -79,11 +72,11 @@ __global__ void calculate_next_generation(const bboard* d_a, bboard* d_result, c
         }
 
         for (int j = 0; j < limit_j; j++) {
-
             this_cell = BOARD_IS_SET(neighbors[C_I][C_J], i, j);
+            char right_j, right_n;
 
             if (j == 0) {
-                int left_j = WIDTH - 1 - remaining_cells * is_edge_l;
+                int left_j = WIDTH - 1 - remaining_cells_w * is_edge_l;
                 first_cells = BOARD_IS_SET(neighbors[up_n][L_J], up_i, left_j)
                               + BOARD_IS_SET(neighbors[C_I][L_J], i, left_j)
                               + BOARD_IS_SET(neighbors[down_n][L_J], down_i, left_j);
@@ -116,6 +109,7 @@ __global__ void calculate_next_generation(const bboard* d_a, bboard* d_result, c
             }
 
             const bool set = (alive_cells == 3) || (alive_cells == 2 && this_cell);
+
             if (set) {
                 SET_BOARD(value, i, j);
             }
