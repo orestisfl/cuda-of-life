@@ -62,13 +62,18 @@ __global__ void calculate_next_generation_no_rem(const bboard* d_a,
         neighbors[B_I][R_J] = row_b[major_r];
     }
 
-    const bool is_edge_r = (major_j == dim_board_w - 1);
-    const bool is_edge_d = (major_i == dim_board_h - 1);
     const bool is_edge_u = (major_i == 0);
     const bool is_edge_l = (major_j == 0);
 
+    #ifndef NO_REM
+    const bool is_edge_r = (major_j == dim_board_w - 1);
+    const bool is_edge_d = (major_i == dim_board_h - 1);
     const char limit_i = HEIGHT - __mul24(remaining_cells_h, is_edge_d);
     const char limit_j = WIDTH - __mul24(remaining_cells_w, is_edge_r);
+    #else
+    #define limit_i HEIGHT
+    #define limit_j WIDTH
+    #endif
 
     bboard value = 0;
     char first_cells, second_cells;
@@ -101,3 +106,8 @@ __global__ void calculate_next_generation_no_rem(const bboard* d_a,
     bboard* row_result = (bboard*)((char*)d_result + major_i * pitch);
     row_result[major_j] = value;
 }
+
+#ifdef NO_REM
+#undef limit_i
+#undef limit_j
+#endif
