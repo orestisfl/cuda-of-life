@@ -19,3 +19,6 @@ set = (alive_cells == 3) || (alive_cells == 2 && this_cell);
 if (set) {
     SET_BOARD(value, i, j);
 }
+
+#undef right_j
+#undef right_n

@@ -51,36 +51,35 @@ __global__ void calculate_next_generation(const bboard* d_a,
     const char limit_j = WIDTH - __mul24(remaining_cells_w, is_edge_r);
 
     bboard value = 0;
-    char up_i, up_n, down_i, down_n;
     char first_cells, second_cells;
     char alive_cells, this_cell;
-    char right_j, right_n;
     char left_j;
     bool set;
 
 #define i 0
-    up_i = HEIGHT - 1 - remaining_cells_h * is_edge_u;
-    up_n = T_I;
-    down_i = i + 1;
-    down_n = C_I;
+#define up_i (HEIGHT - 1 - remaining_cells_h * is_edge_u)
+#define up_n T_I
+#define down_i (i + 1)
+#define down_n (C_I)
 #include "kafrila.c"
 #undef i
+
+
     for (char i = 1; i < limit_i - 1; i++) {
-        up_i = i - 1;
-        up_n = C_I;
-        down_i = i + 1;
-        down_n = C_I;
+#define up_i (i - 1)
+#define up_n C_I
+#define down_i (i + 1)
+#define down_n C_I
 #include "kafrila.c"
     }
 
 #define i (limit_i - 1)
-    up_i = i - 1;
-    up_n = C_I;
-    down_i = 0;
-    down_n = B_I;
+#define up_i (i - 1)
+#define up_n C_I
+#define down_i 0
+#define down_n B_I
 #include "kafrila.c"
 #undef i
-
     bboard* row_result = (bboard*)((char*)d_result + major_i * pitch);
     row_result[major_j] = value;
 }
