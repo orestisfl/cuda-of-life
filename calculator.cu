@@ -42,7 +42,6 @@ __global__ void calculate_next_generation(const bboard* d_a,
     by = blockDim.y + 2;
   }
 
-
   int major_t = (major_i - 1 + dim_board_h) % dim_board_h;
   int major_b = (major_i + 1) % dim_board_h;
   int major_l = (major_j - 1 + dim_board_w) % dim_board_w;
@@ -115,6 +114,7 @@ __global__ void calculate_next_generation(const bboard* d_a,
   const char limit_j = WIDTH - __mul24(remaining_cells_w, is_edge_r);
 
   bboard value = 0;
+#pragma unroll
   for (char i = 0; i < limit_i; i++) {
     char up_i, up_n, down_i, down_n;
     char first_cells, second_cells;
@@ -135,6 +135,7 @@ __global__ void calculate_next_generation(const bboard* d_a,
       down_n = C_I;
     }
 
+#pragma unroll
     for (int j = 0; j < limit_j; j++) {
       this_cell = BOARD_IS_SET(neighbors[C_I][C_J], i, j);
       char right_j, right_n;
@@ -172,7 +173,7 @@ __global__ void calculate_next_generation(const bboard* d_a,
         alive_cells += second_cells - this_cell;
       }
 
-      const bool set = (alive_cells == 3) || (alive_cells == 2 && this_cell);
+      bool set = (alive_cells == 3) || (alive_cells == 2 && this_cell);
 
       if (set) {
         SET_BOARD(value, i, j);

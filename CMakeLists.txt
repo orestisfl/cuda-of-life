@@ -16,11 +16,11 @@ endif(NOT CMAKE_BUILD_TYPE)
 message(STATUS "building for ${CMAKE_BUILD_TYPE}")
 
 FILE(GLOB SOURCES "*.cu" "*.cpp" "*.h")
-# set(CUDA_64_BIT_DEVICE_CODE ON)
+set(CUDA_64_BIT_DEVICE_CODE ON)
 set(CUDA_VERBOSE_BUILD ON)
 
 LIST(APPEND CMAKE_CXX_FLAGS "-ffast-math -Wall")
-LIST(APPEND CUDA_NVCC_FLAGS --compiler-options -fno-strict-aliasing -lineinfo -use_fast_math -Xptxas -dlcm=cg)
+LIST(APPEND CUDA_NVCC_FLAGS -use_fast_math -Xptxas -v)
 LIST(APPEND CUDA_NVCC_FLAGS_RELEASE -O3)
 
 if (${CUDA_VERSION_MAJOR} GREATER 5)
