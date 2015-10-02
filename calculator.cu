@@ -51,71 +51,35 @@ __global__ void calculate_next_generation(const bboard* d_a,
     const char limit_j = WIDTH - __mul24(remaining_cells_w, is_edge_r);
 
     bboard value = 0;
-    for (char i = 0; i < limit_i; i++) {
-        char up_i, up_n, down_i, down_n;
-        char first_cells, second_cells;
-        char alive_cells, this_cell;
+    char up_i, up_n, down_i, down_n;
+    char first_cells, second_cells;
+    char alive_cells, this_cell;
+    char right_j, right_n;
+    char left_j;
+    bool set;
 
-        if (i == 0) {
-            up_i = HEIGHT - 1 - remaining_cells_h * is_edge_u;
-            up_n = T_I;
-        } else {
-            up_i = i - 1;
-            up_n = C_I;
-        }
-        if (i == limit_i - 1) {
-            down_i = 0;
-            down_n = B_I;
-        } else {
-            down_i = i + 1;
-            down_n = C_I;
-        }
-
-        for (int j = 0; j < limit_j; j++) {
-            this_cell = BOARD_IS_SET(neighbors[C_I][C_J], i, j);
-            char right_j, right_n;
-
-            if (j == 0) {
-                int left_j = WIDTH - 1 - remaining_cells_w * is_edge_l;
-                first_cells = BOARD_IS_SET(neighbors[up_n][L_J], up_i, left_j)
-                              + BOARD_IS_SET(neighbors[C_I][L_J], i, left_j)
-                              + BOARD_IS_SET(neighbors[down_n][L_J], down_i, left_j);
-                second_cells = BOARD_IS_SET(neighbors[up_n][C_J], up_i, j)
-                               + this_cell
-                               + BOARD_IS_SET(neighbors[down_n][C_J], down_i, j);
-            }
-            if (j == limit_j - 1) {
-                right_j = 0;
-                right_n = R_J;
-            } else {
-                right_j = j + 1;
-                right_n = C_J;
-            }
-
-            if (j & 1u) {
-                alive_cells = second_cells;
-                second_cells = BOARD_IS_SET(neighbors[up_n][right_n], up_i, right_j)
-                               + BOARD_IS_SET(neighbors[C_I][right_n], i, right_j)
-                               + BOARD_IS_SET(neighbors[down_n][right_n], down_i, right_j);
-                alive_cells += second_cells;
-                alive_cells += first_cells - this_cell;
-            } else {
-                alive_cells = first_cells;
-                first_cells = BOARD_IS_SET(neighbors[up_n][right_n], up_i, right_j)
-                              + BOARD_IS_SET(neighbors[C_I][right_n], i, right_j)
-                              + BOARD_IS_SET(neighbors[down_n][right_n], down_i, right_j);
-                alive_cells += first_cells;
-                alive_cells += second_cells - this_cell;
-            }
-
-            const bool set = (alive_cells == 3) || (alive_cells == 2 && this_cell);
-
-            if (set) {
-                SET_BOARD(value, i, j);
-            }
-        }
-
+#define i 0
+    up_i = HEIGHT - 1 - remaining_cells_h * is_edge_u;
+    up_n = T_I;
+    down_i = i + 1;
+    down_n = C_I;
+#include "kafrila.c"
+#undef i
+    for (char i = 1; i < limit_i - 1; i++) {
+        up_i = i - 1;
+        up_n = C_I;
+        down_i = i + 1;
+        down_n = C_I;
+#include "kafrila.c"
     }
+
+#define i (limit_i - 1)
+    up_i = i - 1;
+    up_n = C_I;
+    down_i = 0;
+    down_n = B_I;
+#include "kafrila.c"
+#undef i
 
     bboard* row_result = (bboard*)((char*)d_result + major_i * pitch);
     row_result[major_j] = value;
