@@ -10,7 +10,6 @@ typedef unsigned int uint;
 #define WIDTH 8
 #define HEIGHT 4
 #define DFL_RUNS 10
-#define THRESHOLD 0.4
 
 #define ANSI_COLOR_RED     "\x1b[31m"
 #define ANSI_COLOR_GREEN   "\x1b[32m"
@@ -40,15 +39,24 @@ extern void save_table(int* X, int dim, const char* filename);
 extern void generate_table(int* X, int dim);
 extern void print_table(int* A, int dim);
 
-extern __global__ void convert_to_tiled(const int* d_table, bboard* d_a, const size_t dim, const size_t pitch);
-extern __global__ void convert_from_tiled(int* d_table, const bboard* d_a, const int dim, const size_t pitch);
+extern __global__ void convert_to_tiled(const int* d_table, bboard* d_a, const size_t dim,
+                                        const size_t pitch);
+extern __global__ void convert_from_tiled(int* d_table, const bboard* d_a, const int dim,
+                                          const size_t pitch);
 extern __global__ void calculate_next_generation(const bboard* d_a,
-                                          bboard* d_result,
-                                          const int dim,
-                                          const int dim_board_w,
-                                          const int dim_board_h,
-                                          const size_t pitch,
-                                          const int remaining_cells_w,
-                                          const int remaining_cells_h
-                                          );
+                                                 bboard* d_result,
+                                                 const int dim,
+                                                 const int dim_board_w,
+                                                 const int dim_board_h,
+                                                 const size_t pitch,
+                                                 const int remaining_cells_w,
+                                                 const int remaining_cells_h
+                                                );
+extern __global__ void calculate_next_generation_no_rem(const bboard* d_a,
+                                                        bboard* d_result,
+                                                        const int dim,
+                                                        const int dim_board_w,
+                                                        const int dim_board_h,
+                                                        const size_t pitch
+                                                       );
 #endif

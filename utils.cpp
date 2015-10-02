@@ -20,6 +20,7 @@ void save_table(int* X, int dim, const char* filename) {
     fclose(fp);
 }
 
+#define THRESHOLD 0.4f
 void generate_table(int* X, int dim) {
     srand(time(NULL));
     int counter = 0;

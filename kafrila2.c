@@ -14,9 +14,7 @@ if (j & 1u) {
     alive_cells += second_cells - this_cell;
 }
 
-set = (alive_cells == 3) || (alive_cells == 2 && this_cell);
-
-if (set) {
+if ((alive_cells == 3) || (alive_cells == 2 && this_cell)) {
     SET_BOARD(value, i, j);
 }
 

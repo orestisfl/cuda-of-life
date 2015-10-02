@@ -1,7 +1,7 @@
 #define j 0
 #define right_j j + 1
 #define right_n C_J
-left_j = WIDTH - 1 - remaining_cells_w * is_edge_l;
+#define left_j (WIDTH - 1 - remaining_cells_w * is_edge_l)
 this_cell = BOARD_IS_SET(neighbors[C_I][C_J], i, j);
 first_cells = BOARD_IS_SET(neighbors[up_n][L_J], up_i, left_j)
               + BOARD_IS_SET(neighbors[C_I][L_J], i, left_j)

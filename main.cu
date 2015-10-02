@@ -115,6 +115,8 @@ int main(int argc, char** argv) {
     convert_to_tiled <<< grid, block >>> (d_table, d_board, dim, pitch);
     cudaCheckErrors("convert_to_tiled failed", __FILE__, __LINE__);
 
+    const bool no_rem = (remaining_cells_w == 0 && remaining_cells_h == 0);
+
     // start timewatch
     float time;
     cudaEvent_t start, stop;
@@ -124,10 +126,15 @@ int main(int argc, char** argv) {
 
     //    zero_k <<< 1, 1 >>> (d_table, dim);
     for (int i = 0; i < n_runs; ++i) {
-        calculate_next_generation <<< grid, block>>> (d_board, d_help,
-                                                      dim, dim_board_w, dim_board_h, pitch,
-                                                      remaining_cells_w, remaining_cells_h
-                                                      );
+        if (no_rem) {
+            calculate_next_generation_no_rem <<< grid, block>>> (d_board, d_help,
+                                                          dim, dim_board_w, dim_board_h, pitch);
+        }
+        else {
+            calculate_next_generation <<< grid, block>>> (d_board, d_help,
+                                                          dim, dim_board_w, dim_board_h, pitch,
+                                                          remaining_cells_w, remaining_cells_h);
+        }
         cudaCheckErrors("calculating next generation failed", __FILE__, __LINE__);
         swap_boards(&d_board, &d_help);
     }

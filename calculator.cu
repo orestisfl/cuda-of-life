@@ -1,6 +1,16 @@
 #include <cuda_runtime.h>
 #include "utils.h"
 
+#ifndef NO_REM
+    #define NO_REM
+    #define remaining_cells_h 0
+    #define remaining_cells_w 0
+    #include "calculator.cu"
+    #undef NO_REM
+    #undef remaining_cells_h
+    #undef remaining_cells_w
+#endif
+
 #define T_I 0
 #define C_I 1
 #define B_I 2
@@ -8,6 +18,7 @@
 #define C_J 1
 #define R_J 2
 
+#ifndef NO_REM
 __global__ void calculate_next_generation(const bboard* d_a,
                                           bboard* d_result,
                                           const int dim,
@@ -17,6 +28,15 @@ __global__ void calculate_next_generation(const bboard* d_a,
                                           const int remaining_cells_w,
                                           const int remaining_cells_h
                                          ) {
+#else
+__global__ void calculate_next_generation_no_rem(const bboard* d_a,
+                                                 bboard* d_result,
+                                                 const int dim,
+                                                 const int dim_board_w,
+                                                 const int dim_board_h,
+                                                 const size_t pitch
+                                                ) {
+#endif
     const int major_j = __mul24(blockIdx.y, blockDim.y) + threadIdx.y;  // col
     const int major_i = __mul24(blockIdx.x, blockDim.x) + threadIdx.x;  // row
 
@@ -53,8 +73,6 @@ __global__ void calculate_next_generation(const bboard* d_a,
     bboard value = 0;
     char first_cells, second_cells;
     char alive_cells, this_cell;
-    char left_j;
-    bool set;
 
 #define i 0
 #define up_i (HEIGHT - 1 - remaining_cells_h * is_edge_u)
