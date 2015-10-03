@@ -15,7 +15,7 @@ if(NOT CMAKE_BUILD_TYPE)
 endif(NOT CMAKE_BUILD_TYPE)
 message(STATUS "building for ${CMAKE_BUILD_TYPE}")
 
-FILE(GLOB SOURCES "*.cu" "*.cpp" "*.h")
+set(SOURCES main.cu calculator.cu converters.cu utils.cpp utils.h)
 set(CUDA_64_BIT_DEVICE_CODE ON)
 set(CUDA_VERBOSE_BUILD ON)
 
