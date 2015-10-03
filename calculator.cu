@@ -1,4 +1,4 @@
 #define NO_REMAINDERS
-#include "calculator-functions.cu"
+#include "code_includes/calculator-functions.cu"
 #undef NO_REMAINDERS
-#include "calculator-functions.cu"
+#include "code_includes/calculator-functions.cu"

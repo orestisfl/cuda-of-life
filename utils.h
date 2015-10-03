@@ -5,6 +5,7 @@
 
 typedef uint32_t bboard;
 typedef unsigned int uint;
+#define BBOARD_CENTER_MASK 8289792
 #define ONE 1UL
 #define ZERO 0UL
 #define WIDTH 8
