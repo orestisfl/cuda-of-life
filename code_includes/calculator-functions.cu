@@ -123,17 +123,17 @@ void calculate_next_generation_no_rem(const bboard* d_a,
 
         extern __shared__ bboard tiles[];
 
-        //        int bx, by;
-        //        if (blockIdx.x == gridDim.x - 1) {
-        //            bx = dim_board_h - blockIdx.x * blockDim.x + 2;
-        //        } else {
-        const int bx = blockDim.x + 2;
-        //        }
-        //        if (blockIdx.y == gridDim.y - 1) {
-        //            by = dim_board_w - blockIdx.y * blockDim.y + 2;
-        //        } else {
-        const int by = blockDim.y + 2;
-        //        }
+        int bx, by;
+        if (blockIdx.x == gridDim.x - 1) {
+            bx = dim_board_h - blockIdx.x * blockDim.x + 2;
+        } else {
+            bx = blockDim.x + 2;
+        }
+        if (blockIdx.y == gridDim.y - 1) {
+            by = dim_board_w - blockIdx.y * blockDim.y + 2;
+        } else {
+            by = blockDim.y + 2;
+        }
 
         bboard* top_row = (bboard*)((char*)d_a + major_t* pitch);
         bboard* row = (bboard*)((char*)d_a + major_i * pitch);
