@@ -29,6 +29,10 @@ bboard reverse(bboard x) {
     x = (((x & 0xff00ff00) >> 8) | ((x & 0x00ff00ff) << 8));
     return ((x >> 16) | (x << 16));
 
+    // inline assembly way:
+    //    bboard res;
+    //    asm("brev.b32 %0, %1;" : "=r"(res) : "r"(x));
+    //    return res;
 }
 
 __device__
@@ -134,20 +138,15 @@ void calculate_next_generation_no_rem(const bboard* d_a,
         neighbors[B_I][R_J] = reverse(neighbors[B_I][R_J]); // corner
     }
 
-    ext_bboard trans = 0;
-    // TODO: unroll?
+    ext_bboard res = 0;
     for (int i = 0; i < 3; i++) {
         for (int j = 0; j < 3; j++) {
-            trans |= bboard_to_ext(neighbors[i][j], i, j);
+            res |= bboard_to_ext(neighbors[i][j], i, j);
         }
     }
 
-    ext_bboard res = gol(trans);
-    // unessecary if we keep ext_to_board() like that
-    res &= EXT_BBOARD_CENTER_MASK;
-
-    bboard value = ext_to_bboard(res);
+    res = gol(res);
 
     bboard* row_result = (bboard*)((char*)d_result + major_i * pitch);
-    row_result[major_j] = value;
+    row_result[major_j] = ext_to_bboard(res);
 }
