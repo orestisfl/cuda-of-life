@@ -8,107 +8,99 @@
 #define C_J 1
 #define R_J 2
 
-#ifdef NO_REMAINDERS
-#define remaining_cells_h 0
-#define remaining_cells_w 0
-
 #include <stdio.h>
-// ~ __device__
-// ~ void board_print(bboard val) {
-    // ~ for (int i = 0; i < HEIGHT; i++) {
-        // ~ for (int j = 0; j < WIDTH; j++) {
-            // ~ printf("%s"ANSI_COLOR_RESET,
-                   // ~ BOARD_IS_SET(val, i, j) ? ANSI_COLOR_BLUE"1 " : ANSI_COLOR_RED"0 ");
-        // ~ }
-        // ~ printf("\n");
-    // ~ }
-    // ~ printf("\n");
-// ~ }
+__device__
+void board_print(bboard val) {
+    for (int i = 0; i < HEIGHT; i++) {
+        for (int j = 0; j < WIDTH; j++) {
+            CUDA_PRINT("%s"ANSI_COLOR_RESET,
+                       BOARD_IS_SET(val, i, j) ? ANSI_COLOR_BLUE"1 " : ANSI_COLOR_RED"0 ");
+        }
+        CUDA_PRINT("\n");
+    }
+    CUDA_PRINT("\n");
+}
 
 __device__
-static bboard calculate_midle(bboard this_cell) {
-    // ~ const bboard L1 = this_cell >> 1;
-    // ~ const bboard L2 = this_cell << 1;
-    // ~ const bboard L3 = this_cell << WIDTH;
-    // ~ const bboard L4 = this_cell >> WIDTH;
-    // ~ const bboard L5 = this_cell << (WIDTH + 1);
-    // ~ const bboard L6 = this_cell >> (WIDTH + 1);
-    // ~ const bboard L7 = this_cell << (WIDTH - 1);
-    // ~ const bboard L8 = this_cell >> (WIDTH - 1);
-    // ~ bboard S0, S1, S2, S3;
+void ext_board_print(ext_bboard val) {
+    for (int i = 0; i < EXT_HEIGHT; i++) {
+        for (int j = 0; j < EXT_WIDTH; j++) {
+            CUDA_PRINT("%s"ANSI_COLOR_RESET,
+                       EXT_BOARD_IS_SET(val, i, j) ? ANSI_COLOR_BLUE"1 " : ANSI_COLOR_RED"0 ");
+        }
+        CUDA_PRINT("\n");
+    }
+    CUDA_PRINT("\n");
+}
 
-    // ~ S0 = ~(L1 | L2);
-    // ~ S1 = L1 ^ L2;
-    // ~ S2 = L1 & L2;
+__device__
+ext_bboard bboard_to_ext(bboard val, int m_i, int m_j) {
+    ext_bboard ext = 0;
+    for (int i = 0; i < HEIGHT; i++) {
+        for (int j = 0; j < WIDTH; j++) {
+            if (BOARD_IS_SET(val, i, j)) EXT_SET_BOARD(ext, i, j);
+        }
+    }
+    return ext << (EXT_POS(m_i, m_j));
+}
 
-    // ~ S3 = L3 & S2;
-    // ~ S2 = (S2 & ~L3) | (S1 & L3);
-    // ~ S1 = (S1 & ~L3) | (S0 & L3);
-    // ~ S0 = S0 & ~L3;
+__device__
+bboard reverse(bboard x) {
+    x = (((x & 0xaaaaaaaa) >> 1) | ((x & 0x55555555) << 1));
+    x = (((x & 0xcccccccc) >> 2) | ((x & 0x33333333) << 2));
+    x = (((x & 0xf0f0f0f0) >> 4) | ((x & 0x0f0f0f0f) << 4));
+    x = (((x & 0xff00ff00) >> 8) | ((x & 0x00ff00ff) << 8));
+    return ((x >> 16) | (x << 16));
 
-    // ~ S3 = (S3 & ~L4) | (S2 & L4);
-    // ~ S2 = (S2 & ~L4) | (S1 & L4);
-    // ~ S1 = (S1 & ~L4) | (S0 & L4);
-    // ~ S0 = S0 & ~L4;
+}
 
-    // ~ S3 = (S3 & ~L5) | (S2 & L5);
-    // ~ S2 = (S2 & ~L5) | (S1 & L5);
-    // ~ S1 = (S1 & ~L5) | (S0 & L5);
-    // ~ S0 = S0 & ~L5;
+__device__
+bboard ext_to_bboard(ext_bboard val) {
+    bboard res = 0;
+    for (int i = 1; i < EXT_HEIGHT - 1; i++) {
+        for (int j = 1; j < EXT_WIDTH - 1; j++) {
+            if (EXT_BOARD_IS_SET(val, i, j)) SET_BOARD(res, i - 1, j - 1);
+        }
+    }
+    return res;
+}
 
-    // ~ S3 = (S3 & ~L6) | (S2 & L6);
-    // ~ S2 = (S2 & ~L6) | (S1 & L6);
-    // ~ S1 = (S1 & ~L6) | (S0 & L6);
-    // ~ S0 = S0 & ~L6;
-
-    // ~ S3 = (S3 & ~L7) | (S2 & L7);
-    // ~ S2 = (S2 & ~L7) | (S1 & L7);
-    // ~ S1 = (S1 & ~L7) | (S0 & L7);
-
-    // ~ S3 = (S3 & ~L8) | (S2 & L8);
-    // ~ S2 = (S2 & ~L8) | (S1 & L8);
-    bboard L1 = this_cell >> 1;
-    bboard L2 = this_cell << 1;
-    bboard L3 = this_cell << WIDTH;
-    bboard L4 = this_cell >> WIDTH;
-    bboard L5 = this_cell << (WIDTH + 1);
-    bboard L6 = this_cell >> (WIDTH + 1);
-    bboard L7 = this_cell << (WIDTH - 1);
-    bboard L8 = this_cell >> (WIDTH - 1);
-    bboard S0 , S1 , S2 , S3 , S4 , S5 , S6 , S7 , S8;
-    S0 = S1 = S2 = S3 = S4 = S5 = S6 = S7 = S8 = 0;
-    // ~ ADD2(S0, S1, L1, L2);
-
-    // ~ board_print(S0);
-    // ~ board_print(S1);
-    // ~ board_print(L1);
-    // ~ board_print(L2);
+// TODO: rename, optimize
+__device__
+ext_bboard gol(ext_bboard cell) {
+    ext_bboard L1 = cell >> 1;
+    ext_bboard L2 = cell << 1;
+    ext_bboard L3 = cell << EXT_WIDTH;
+    ext_bboard L4 = cell >> EXT_WIDTH;
+    ext_bboard L5 = cell << (EXT_WIDTH + 1);
+    ext_bboard L6 = cell >> (EXT_WIDTH + 1);
+    ext_bboard L7 = cell << (EXT_WIDTH - 1);
+    ext_bboard L8 = cell >> (EXT_WIDTH - 1);
+    ext_bboard S0 , S1 , S2 , S3 , S4 , S5 , S6 , S7;
+    S0 = S1 = S2 = S3 = S4 = S5 = S6 = S7 = 0;
 
     S0 = ~(L1 | L2);
     S1 = L1 ^ L2;
     S2 = L1 & L2;
-    //Now building on the results above consider the third layer.
-    //Notice for S2, the sum is two if the sum of the first two terms
-    //was two and the third is zero, or the sum is two if the sum of
-    //the first two terms was one and the third term is one.
+
     S3 = L3 & S2;
     S2 = (S2 & ~L3) | (S1 & L3);
     S1 = (S1 & ~L3) | (S0 & L3);
     S0 = S0 & ~L3;
-    
+
     S4 = S3 & L4;
     S3 = (S3 & ~L4) | (S2 & L4);
     S2 = (S2 & ~L4) | (S1 & L4);
     S1 = (S1 & ~L4) | (S0 & L4);
     S0 = S0 & ~L4;
-    
+
     S5 = S4 & L5;
     S4 = (S4 & ~L5) | (S3 & L5);
     S3 = (S3 & ~L5) | (S2 & L5);
     S2 = (S2 & ~L5) | (S1 & L5);
     S1 = (S1 & ~L5) | (S0 & L5);
     S0 = S0 & ~L5;
-    
+
     S6 = S5 & L6;
     S5 = (S5 & ~L6) | (S4 & L6);
     S4 = (S4 & ~L6) | (S3 & L6);
@@ -116,7 +108,7 @@ static bboard calculate_midle(bboard this_cell) {
     S2 = (S2 & ~L6) | (S1 & L6);
     S1 = (S1 & ~L6) | (S0 & L6);
     S0 = S0 & ~L6;
-    
+
     S7 = S6 & L7;
     S6 = (S6 & ~L7) | (S5 & L7);
     S5 = (S5 & ~L7) | (S4 & L7);
@@ -125,17 +117,22 @@ static bboard calculate_midle(bboard this_cell) {
     S2 = (S2 & ~L7) | (S1 & L7);
     S1 = (S1 & ~L7) | (S0 & L7);
     S0 = S0 & ~L7;
-    
-    S8 = S7 & L8;
+
     S7 = (S7 & ~L8) | (S6 & L8);
     S6 = (S6 & ~L8) | (S5 & L8);
     S5 = (S5 & ~L8) | (S4 & L8);
     S4 = (S4 & ~L8) | (S3 & L8);
     S3 = (S3 & ~L8) | (S2 & L8);
     S2 = (S2 & ~L8) | (S1 & L8);
+    // ~ S1 = (S1 & ~L8) | (S0 & L8);
+    // ~ S0 = S0 & ~L8;
 
-    return ((S2 & this_cell) | S3) & BBOARD_CENTER_MASK;
+    // ~ board_print(S2 & cell);
+    // ~ board_print(S3);
+    // ~ return (((S2 & cell) | S3) & 8289792);
+    return (((S2 & cell) | S3));
 }
+
 
 __global__
 void calculate_next_generation_no_rem(const bboard* d_a,
@@ -145,18 +142,6 @@ void calculate_next_generation_no_rem(const bboard* d_a,
                                       const int dim_board_h,
                                       const size_t pitch
                                      ) {
-#else
-__global__
-void calculate_next_generation(const bboard* d_a,
-                               bboard* d_result,
-                               const int dim,
-                               const int dim_board_w,
-                               const int dim_board_h,
-                               const size_t pitch,
-                               const int remaining_cells_w,
-                               const int remaining_cells_h
-                              ) {
-#endif
 
     const int major_j = __mul24(blockIdx.y, blockDim.y) + threadIdx.y;  // col
     const int major_i = __mul24(blockIdx.x, blockDim.x) + threadIdx.x;  // row
@@ -173,176 +158,49 @@ void calculate_next_generation(const bboard* d_a,
         bboard* row_t = (bboard*)((char*)d_a + major_t* pitch);
         bboard* row_b = (bboard*)((char*)d_a + major_b * pitch);
         neighbors[C_I][C_J] = row_c[major_j];
-        neighbors[C_I][L_J] = row_c[major_l];
-        neighbors[C_I][R_J] = row_c[major_r];
-        neighbors[T_I][C_J] = row_t[major_j];
-        neighbors[T_I][L_J] = row_t[major_l];
-        neighbors[T_I][R_J] = row_t[major_r];
-        neighbors[B_I][C_J] = row_b[major_j];
-        neighbors[B_I][L_J] = row_b[major_l];
-        neighbors[B_I][R_J] = row_b[major_r];
+        neighbors[C_I][L_J] = row_c[major_l] & BBOARD_RIGHT_COL_MASK;
+        neighbors[C_I][R_J] = row_c[major_r] & BBOARD_LEFT_COL_MASK;
+        neighbors[T_I][C_J] = row_t[major_j] & BBOARD_BOTTOM_ROW_MASK;
+        neighbors[T_I][L_J] = row_t[major_l] & BBOARD_BOTTOM_ROW_MASK & BBOARD_RIGHT_COL_MASK;
+        neighbors[T_I][R_J] = row_t[major_r] & BBOARD_BOTTOM_ROW_MASK & BBOARD_LEFT_COL_MASK;
+        neighbors[B_I][C_J] = row_b[major_j] & BBOARD_UPPER_ROW_MASK;
+        neighbors[B_I][L_J] = row_b[major_l] & BBOARD_UPPER_ROW_MASK & BBOARD_RIGHT_COL_MASK;
+        neighbors[B_I][R_J] = row_b[major_r] & BBOARD_UPPER_ROW_MASK & BBOARD_LEFT_COL_MASK;
+
+        neighbors[C_I][L_J] = (neighbors[C_I][L_J]) >> (WIDTH - 1);
+        neighbors[C_I][R_J] = (neighbors[C_I][R_J]) << (WIDTH - 1);
+        neighbors[T_I][C_J] = (neighbors[T_I][C_J]) >> ((HEIGHT - 1) * WIDTH);
+        neighbors[T_I][L_J] = reverse(neighbors[T_I][L_J]); // corner
+        neighbors[T_I][R_J] = reverse(neighbors[T_I][R_J]); // corner
+        neighbors[B_I][C_J] = neighbors[B_I][C_J] << ((HEIGHT - 1) * WIDTH);
+        neighbors[B_I][L_J] = reverse(neighbors[B_I][L_J]); // corner
+        neighbors[B_I][R_J] = reverse(neighbors[B_I][R_J]); // corner
     }
 
-    #ifdef NO_REMAINDERS
-#define limit_i HEIGHT
-#define limit_j WIDTH
-#define is_edge_u false
-#define is_edge_l false
-    #else
-    const bool is_edge_r = (major_j == dim_board_w - 1);
-    const bool is_edge_d = (major_i == dim_board_h - 1);
-    const char limit_i = HEIGHT - __mul24(remaining_cells_h, is_edge_d);
-    const char limit_j = WIDTH - __mul24(remaining_cells_w, is_edge_r);
-    const bool is_edge_u = (major_i == 0);
-    const bool is_edge_l = (major_j == 0);
-    #endif
-
-    char first_cells, second_cells;
-    char alive_cells, this_cell;
-
-    #ifdef NO_REMAINDERS
-    #define this_cc neighbors[C_I][C_J]
-    #define this_cl neighbors[C_I][L_J]
-    #define this_cr neighbors[C_I][R_J]
-    bboard value = calculate_midle(this_cc);
-    // ~ if (threadIdx.x == 1) board_print(value);
-    // ~ if (threadIdx.x == 1) board_print(this_cc);
-    // ~ for (char i = 1; i < limit_i - 1; i++) {
-
-        // ~ char alive_neighbors;
-        // ~ bool set;
-
-        // ~ alive_neighbors =
-            // ~ BOARD_IS_SET(this_cl, i - 1, WIDTH - 1) + // top left
-            // ~ BOARD_IS_SET(this_cc, i - 1, 0) + // top center
-            // ~ BOARD_IS_SET(this_cc, i - 1, 1) + // top right
-            // ~ BOARD_IS_SET(this_cl, i, WIDTH - 1) + // center left
-            // ~ BOARD_IS_SET(this_cc, i, 1) + // center right
-            // ~ BOARD_IS_SET(this_cl, i + 1, WIDTH - 1) + // bottom left
-            // ~ BOARD_IS_SET(this_cc, i + 1, 0) + // bottom center
-            // ~ BOARD_IS_SET(this_cc, i + 1, 1);  // bottom right
-
-        // ~ set = (alive_neighbors == 3) || (alive_neighbors == 2 &&
-                                         // ~ BOARD_IS_SET(this_cc, i, 0));
-        // ~ if (set) SET_BOARD(value, i, 0);
-
-        // ~ alive_neighbors =
-            // ~ BOARD_IS_SET(this_cc, i - 1, limit_j - 2) + // top left
-            // ~ BOARD_IS_SET(this_cc, i - 1, limit_j - 1) + // top center
-            // ~ BOARD_IS_SET(this_cr, i - 1, 0) + // top right
-            // ~ BOARD_IS_SET(this_cc, i, limit_j - 2) + // center left
-            // ~ BOARD_IS_SET(this_cr, i, 0) + // center right
-            // ~ BOARD_IS_SET(this_cc, i + 1, limit_j - 2) + // bottom left
-            // ~ BOARD_IS_SET(this_cc, i + 1, limit_j - 1) + // bottom center
-            // ~ BOARD_IS_SET(this_cr, i + 1, 0);  // bottom right
-
-        // ~ set = (alive_neighbors == 3) || (alive_neighbors == 2 &&
-                                         // ~ BOARD_IS_SET(this_cc, i, limit_j - 1));
-        // ~ if (set) SET_BOARD(value, i, limit_j - 1);
-    // ~ }
-    // ~ for (char i = 1; i < limit_i - 1; i++){
-        // ~ #define up_i (i-1)
-        // ~ #define up_n C_I
-        // ~ #define down_i (i+1)
-        // ~ #define down_n C_I
-        // ~ #include "kafrila_jlim.c"
-    // ~ }
-
-        for (char i = 1; i < HEIGHT - 2; i++) {
-#define up_i (i - 1)
-#define up_n C_I
-#define down_n C_I
-#define down_i (i+1)
-
-#define j 0
-#define left_j (WIDTH - 1)
-#define left_n L_J
-#define right_j (j + 1)
-#define right_n C_J
-        int alive_neighbors =
-            BOARD_IS_SET(neighbors[up_n][left_n], up_i, left_j) + // top left
-            BOARD_IS_SET(neighbors[up_n][C_J], up_i, j) + // top center
-            BOARD_IS_SET(neighbors[up_n][right_n], up_i, right_j) + // top right
-            BOARD_IS_SET(neighbors[C_I][left_n], i, left_j) + // center left
-            //                BOARD_IS_SET(neighbors[C_I][C_J], i, j) + // center center
-            BOARD_IS_SET(neighbors[C_I][right_n], i, right_j) + // center right
-            BOARD_IS_SET(neighbors[down_n][left_n], down_i, left_j) + // bottom left
-            BOARD_IS_SET(neighbors[down_n][C_J], down_i, j) + // bottom center
-            BOARD_IS_SET(neighbors[down_n][right_n], down_i, right_j);  // bottom right
-        bool set = (alive_neighbors == 3) || (alive_neighbors == 2 &&
-                                              BOARD_IS_SET(neighbors[C_I][C_J], i, j));
-        if (set) SET_BOARD(value, i, j);
-
-#undef left_j
-#undef left_n
-#undef right_n
-#undef right_j
-#undef j
-#define j (HEIGHT - 1)
-#define left_j (j - 1)
-#define left_n C_J
-#define right_j 0
-#define right_n R_J
-        alive_neighbors =
-            BOARD_IS_SET(neighbors[up_n][left_n], up_i, left_j) + // top left
-            BOARD_IS_SET(neighbors[up_n][C_J], up_i, j) + // top center
-            BOARD_IS_SET(neighbors[up_n][right_n], up_i, right_j) + // top right
-            BOARD_IS_SET(neighbors[C_I][left_n], i, left_j) + // center left
-            //                BOARD_IS_SET(neighbors[C_I][C_J], i, j) + // center center
-            BOARD_IS_SET(neighbors[C_I][right_n], i, right_j) + // center right
-            BOARD_IS_SET(neighbors[down_n][left_n], down_i, left_j) + // bottom left
-            BOARD_IS_SET(neighbors[down_n][C_J], down_i, j) + // bottom center
-            BOARD_IS_SET(neighbors[down_n][right_n], down_i, right_j);  // bottom right
-        set = (alive_neighbors == 3) || (alive_neighbors == 2 &&
-                                         BOARD_IS_SET(neighbors[C_I][C_J], i, j));
-        if (set) SET_BOARD(value, i, j);
-#undef left_j
-#undef left_n
-#undef right_n
-#undef right_j
-#undef down_n
-#undef down_i
-#undef up_i
-#undef up_n
-#undef j
-
+    ext_bboard trans = 0;
+    // TODO: unroll?
+    for (int i = 0; i < 3; i++) {
+        for (int j = 0; j < 3; j++) {
+            ext_bboard tmp = bboard_to_ext(neighbors[i][j], i, j);
+//            if (threadIdx.x == 0) CUDA_PRINT("from:\n");
+//            if (threadIdx.x == 0) board_print(neighbors[i][j]);
+//            if (threadIdx.x == 0) CUDA_PRINT("to:\n");
+//            if (threadIdx.x == 0) ext_board_print(tmp);
+            trans |= tmp;
+        }
     }
-    #else
-    bboard value = 0;
-    for (char i = 1; i < limit_i - 1; i++) {
-#define up_i (i - 1)
-#define up_n C_I
-#define down_i (i + 1)
-#define down_n C_I
-#include "kafrila.c"
-    }
-    #endif
 
-#define i 0
-#define up_i (HEIGHT - 1 - remaining_cells_h * is_edge_u)
-#define up_n T_I
-#define down_i (i + 1)
-#define down_n (C_I)
-#include "kafrila.c"
-#undef i
+    ext_bboard res = gol(trans);
+    // unessecary if we keep ext_to_board() like that
+    res &= EXT_BBOARD_CENTER_MASK;
 
-#define i (limit_i - 1)
-#define up_i (i - 1)
-#define up_n C_I
-#define down_i 0
-#define down_n B_I
-#include "kafrila.c"
-#undef i
+    bboard value = ext_to_bboard(res);
+
+//    if (threadIdx.x == 0) board_print(neighbors[C_I][C_J]);
+//    if (threadIdx.x == 0) ext_board_print(trans);
+//    if (threadIdx.x == 0) ext_board_print(res);
+//    if (threadIdx.x == 0) board_print(value);
+
     bboard* row_result = (bboard*)((char*)d_result + major_i * pitch);
     row_result[major_j] = value;
 }
-
-#ifdef NO_REMAINDERS
-    // clean up
-    #undef limit_i
-    #undef limit_j
-    #undef is_edge_u
-    #undef is_edge_l
-    #undef remaining_cells_h
-    #undef remaining_cells_w
-#endif

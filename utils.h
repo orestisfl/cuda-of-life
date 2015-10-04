@@ -4,12 +4,14 @@
 #include <cuda_runtime.h>
 
 typedef uint32_t bboard;
+typedef uint64_t ext_bboard;
 typedef unsigned int uint;
-#define BBOARD_CENTER_MASK 8289792
 #define ONE 1UL
 #define ZERO 0UL
 #define WIDTH 8
 #define HEIGHT 4
+#define EXT_WIDTH (WIDTH + 2)
+#define EXT_HEIGHT (HEIGHT + 2)
 #define DFL_RUNS 10
 
 #define ANSI_COLOR_RED     "\x1b[31m"
@@ -22,14 +24,26 @@ typedef unsigned int uint;
 
 #define CEIL_DIV(X, Y) (1 + (((X) - 1) / (Y)))
 
-#define POS(i,j) (i * WIDTH + j)
+#define POS(i,j) ((i) * WIDTH + (j))
 
 #define SET_BOARD(val, i, j) val |= (ONE << POS(i, j))
 #define CLEAR_BOARD(val, i, j) val &= ~(ONE << POS(i, j))
 #define TOGGLE_BOARD(val, i, j) val ^= (ONE << POS(i, j))
 #define BOARD_IS_SET(val, i, j) ((bool)((val) & (ONE << POS(i, j))))
 
-#if (__CUDA_ARCH__ >= 200) && defined(USE_CUDA_PRINT)
+#define EXT_POS(i,j) (i * EXT_WIDTH + j)
+#define EXT_SET_BOARD(val, i, j) val |= (ONE << EXT_POS(i, j))
+#define EXT_BOARD_IS_SET(val, i, j) ((bool)((val) & (ONE << EXT_POS(i, j))))
+
+#define BBOARD_LEFT_COL_MASK 16843009u
+#define BBOARD_RIGHT_COL_MASK 2155905152u
+#define BBOARD_UPPER_ROW_MASK 255u
+#define BBOARD_BOTTOM_ROW_MASK 4278190080u
+#define BBOARD_CENTER_MASK 8289792u
+
+#define EXT_BBOARD_CENTER_MASK 561299073792000lu
+
+#if (__CUDA_ARCH__ >= 200)
     #define CUDA_PRINT(...) printf(__VA_ARGS__)
 #else
     #define CUDA_PRINT(...)

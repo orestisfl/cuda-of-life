@@ -16,7 +16,7 @@ endif(NOT CMAKE_BUILD_TYPE)
 message(STATUS "building for ${CMAKE_BUILD_TYPE}")
 
 include_directories(code_includes)
-set(SOURCES main.cu calculator.cu converters.cu utils.cpp utils.h)
+set(SOURCES main.cu calculator.cu converters.cu utils.cpp utils.h code_includes/calculator-functions.cu)
 set(CUDA_64_BIT_DEVICE_CODE ON)
 set(CUDA_VERBOSE_BUILD ON)
 
