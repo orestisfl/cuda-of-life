@@ -95,6 +95,8 @@ ext_bboard gol(ext_bboard cell) {
 }
 
 
+#define TPOS(X, Y, DIM)((X) * (DIM) + (Y))
+
 __global__
 void calculate_next_generation_no_rem(const bboard* d_a,
                                       bboard* d_result,
@@ -115,18 +117,91 @@ void calculate_next_generation_no_rem(const bboard* d_a,
         const int major_r = (major_j + 1) % dim_board_w;
         const int major_t = (major_i - 1 + dim_board_h) % dim_board_h;
         const int major_b = (major_i + 1) % dim_board_h;
-        bboard* row_c = (bboard*)((char*)d_a + major_i * pitch);
-        bboard* row_t = (bboard*)((char*)d_a + major_t* pitch);
-        bboard* row_b = (bboard*)((char*)d_a + major_b * pitch);
-        neighbors[C_I][C_J] = row_c[major_j];
-        neighbors[C_I][L_J] = row_c[major_l] & BBOARD_RIGHT_COL_MASK;
-        neighbors[C_I][R_J] = row_c[major_r] & BBOARD_LEFT_COL_MASK;
-        neighbors[T_I][C_J] = row_t[major_j] & BBOARD_BOTTOM_ROW_MASK;
-        neighbors[T_I][L_J] = row_t[major_l] & BBOARD_BOTTOM_ROW_MASK & BBOARD_RIGHT_COL_MASK;
-        neighbors[T_I][R_J] = row_t[major_r] & BBOARD_BOTTOM_ROW_MASK & BBOARD_LEFT_COL_MASK;
-        neighbors[B_I][C_J] = row_b[major_j] & BBOARD_UPPER_ROW_MASK;
-        neighbors[B_I][L_J] = row_b[major_l] & BBOARD_UPPER_ROW_MASK & BBOARD_RIGHT_COL_MASK;
-        neighbors[B_I][R_J] = row_b[major_r] & BBOARD_UPPER_ROW_MASK & BBOARD_LEFT_COL_MASK;
+
+        const int tx = threadIdx.x;
+        const int ty = threadIdx.y;
+
+        extern __shared__ bboard tiles[];
+
+        //        int bx, by;
+        //        if (blockIdx.x == gridDim.x - 1) {
+        //            bx = dim_board_h - blockIdx.x * blockDim.x + 2;
+        //        } else {
+        const int bx = blockDim.x + 2;
+        //        }
+        //        if (blockIdx.y == gridDim.y - 1) {
+        //            by = dim_board_w - blockIdx.y * blockDim.y + 2;
+        //        } else {
+        const int by = blockDim.y + 2;
+        //        }
+
+        bboard* top_row = (bboard*)((char*)d_a + major_t* pitch);
+        bboard* row = (bboard*)((char*)d_a + major_i * pitch);
+        bboard* bot_row = (bboard*)((char*)d_a + major_b * pitch);
+
+        tiles[TPOS(tx + 1, ty + 1, by)] = row[major_j];
+
+        if (ty == 0) {
+            //is in the left edge of the block. keep row
+            tiles[TPOS(tx + 1, 0, by)] = row[major_l];
+
+            if (tx == 0) {
+                //top left corner!
+                tiles[TPOS(0, 0, by)] = top_row[major_l];
+            }
+
+            if (tx == bx - 3) {
+                //bottom left corner
+                tiles[TPOS(bx - 1, 0, by)] = bot_row[major_l];
+            }
+        }
+
+        if (ty == by - 3) {
+            //is on the right edge
+            tiles[TPOS(tx + 1, by - 1, by)] = row[major_r];
+
+            if (tx == 0) {
+                // top right corner
+                tiles[TPOS(0, by - 1, by)] = top_row[major_r];
+            }
+
+            if (tx == bx - 3) {
+                // bottom right corner
+                tiles[TPOS(bx - 1, by - 1, by)] = bot_row[major_r];
+            }
+        }
+
+        if (tx == 0) {
+            //is on the upper edge of the block. keep col
+            tiles[TPOS(0, ty + 1, by)] = top_row[major_j];
+        }
+
+        if (tx == bx - 3) {
+            //is on the bottom edge
+            tiles[TPOS(bx - 1, ty + 1, by)] = bot_row[major_j];
+        }
+
+        __syncthreads();
+
+        neighbors[C_I][C_J] = tiles[TPOS(tx + 1, ty + 1, by)];
+        neighbors[C_I][L_J] = tiles[TPOS(tx + 1, ty, by)];
+        neighbors[C_I][R_J] = tiles[TPOS(tx + 1, ty + 2, by)];
+        neighbors[T_I][C_J] = tiles[TPOS(tx, ty + 1, by)];
+        neighbors[T_I][L_J] = tiles[TPOS(tx, ty, by)];
+        neighbors[T_I][R_J] = tiles[TPOS(tx, ty + 2, by)];
+        neighbors[B_I][C_J] = tiles[TPOS(tx + 2, ty + 1, by)];
+        neighbors[B_I][L_J] = tiles[TPOS(tx + 2, ty, by)];
+        neighbors[B_I][R_J] = tiles[TPOS(tx + 2, ty + 2, by)];
+
+
+        neighbors[C_I][L_J] &= BBOARD_RIGHT_COL_MASK;
+        neighbors[C_I][R_J] &= BBOARD_LEFT_COL_MASK;
+        neighbors[T_I][C_J] &= BBOARD_BOTTOM_ROW_MASK;
+        neighbors[T_I][L_J] &= BBOARD_BOTTOM_ROW_MASK & BBOARD_RIGHT_COL_MASK;
+        neighbors[T_I][R_J] &= BBOARD_BOTTOM_ROW_MASK & BBOARD_LEFT_COL_MASK;
+        neighbors[B_I][C_J] &= BBOARD_UPPER_ROW_MASK;
+        neighbors[B_I][L_J] &= BBOARD_UPPER_ROW_MASK & BBOARD_RIGHT_COL_MASK;
+        neighbors[B_I][R_J] &= BBOARD_UPPER_ROW_MASK & BBOARD_LEFT_COL_MASK;
 
         neighbors[C_I][L_J] = (neighbors[C_I][L_J]) >> (WIDTH - 1);
         neighbors[C_I][R_J] = (neighbors[C_I][R_J]) << (WIDTH - 1);

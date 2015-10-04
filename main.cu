@@ -127,7 +127,7 @@ int main(int argc, char** argv) {
     //    zero_k <<< 1, 1 >>> (d_table, dim);
     for (int i = 0; i < n_runs; ++i) {
         if (no_rem) {
-            calculate_next_generation_no_rem <<< grid, block>>> (d_board, d_help,
+            calculate_next_generation_no_rem <<< grid, block, (block.x + 2) * (block.y + 2) * sizeof(bboard)>>> (d_board, d_help,
                                                           dim, dim_board_w, dim_board_h, pitch);
         }
         else {

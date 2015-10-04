@@ -53,8 +53,8 @@ __global__ void calculate_next_generation(const bboard* d_a,
     bboard value = 0;
     char first_cells, second_cells;
     char alive_cells, this_cell;
-    char left_j;
-    bool set;
+//    char left_j;
+//    bool set;
 
 #define i 0
 #define up_i (HEIGHT - 1 - remaining_cells_h * is_edge_u)
