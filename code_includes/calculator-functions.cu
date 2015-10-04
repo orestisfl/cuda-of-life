@@ -9,29 +9,6 @@
 #define R_J 2
 
 #include <stdio.h>
-__device__
-void board_print(bboard val) {
-    for (int i = 0; i < HEIGHT; i++) {
-        for (int j = 0; j < WIDTH; j++) {
-            CUDA_PRINT("%s"ANSI_COLOR_RESET,
-                       BOARD_IS_SET(val, i, j) ? ANSI_COLOR_BLUE"1 " : ANSI_COLOR_RED"0 ");
-        }
-        CUDA_PRINT("\n");
-    }
-    CUDA_PRINT("\n");
-}
-
-__device__
-void ext_board_print(ext_bboard val) {
-    for (int i = 0; i < EXT_HEIGHT; i++) {
-        for (int j = 0; j < EXT_WIDTH; j++) {
-            CUDA_PRINT("%s"ANSI_COLOR_RESET,
-                       EXT_BOARD_IS_SET(val, i, j) ? ANSI_COLOR_BLUE"1 " : ANSI_COLOR_RED"0 ");
-        }
-        CUDA_PRINT("\n");
-    }
-    CUDA_PRINT("\n");
-}
 
 __device__
 ext_bboard bboard_to_ext(bboard val, int m_i, int m_j) {
@@ -127,8 +104,6 @@ ext_bboard gol(ext_bboard cell) {
     // ~ S1 = (S1 & ~L8) | (S0 & L8);
     // ~ S0 = S0 & ~L8;
 
-    // ~ board_print(S2 & cell);
-    // ~ board_print(S3);
     // ~ return (((S2 & cell) | S3) & 8289792);
     return (((S2 & cell) | S3));
 }
@@ -181,12 +156,7 @@ void calculate_next_generation_no_rem(const bboard* d_a,
     // TODO: unroll?
     for (int i = 0; i < 3; i++) {
         for (int j = 0; j < 3; j++) {
-            ext_bboard tmp = bboard_to_ext(neighbors[i][j], i, j);
-//            if (threadIdx.x == 0) CUDA_PRINT("from:\n");
-//            if (threadIdx.x == 0) board_print(neighbors[i][j]);
-//            if (threadIdx.x == 0) CUDA_PRINT("to:\n");
-//            if (threadIdx.x == 0) ext_board_print(tmp);
-            trans |= tmp;
+            trans |= bboard_to_ext(neighbors[i][j], i, j);
         }
     }
 
@@ -195,11 +165,6 @@ void calculate_next_generation_no_rem(const bboard* d_a,
     res &= EXT_BBOARD_CENTER_MASK;
 
     bboard value = ext_to_bboard(res);
-
-//    if (threadIdx.x == 0) board_print(neighbors[C_I][C_J]);
-//    if (threadIdx.x == 0) ext_board_print(trans);
-//    if (threadIdx.x == 0) ext_board_print(res);
-//    if (threadIdx.x == 0) board_print(value);
 
     bboard* row_result = (bboard*)((char*)d_result + major_i * pitch);
     row_result[major_j] = value;
