@@ -42,19 +42,18 @@ bboard ext_to_bboard(ext_bboard val) {
     return res;
 }
 
-// TODO: rename, optimize
 __device__
 ext_bboard gol(ext_bboard cell) {
-    ext_bboard L1 = cell >> 1;
-    ext_bboard L2 = cell << 1;
-    ext_bboard L3 = cell << EXT_WIDTH;
-    ext_bboard L4 = cell >> EXT_WIDTH;
-    ext_bboard L5 = cell << (EXT_WIDTH + 1);
-    ext_bboard L6 = cell >> (EXT_WIDTH + 1);
-    ext_bboard L7 = cell << (EXT_WIDTH - 1);
-    ext_bboard L8 = cell >> (EXT_WIDTH - 1);
-    ext_bboard S0 , S1 , S2 , S3 , S4 , S5 , S6 , S7;
-    S0 = S1 = S2 = S3 = S4 = S5 = S6 = S7 = 0;
+    const ext_bboard L1 = cell >> 1;
+    const ext_bboard L2 = cell << 1;
+    const ext_bboard L3 = cell << EXT_WIDTH;
+    const ext_bboard L4 = cell >> EXT_WIDTH;
+    const ext_bboard L5 = cell << (EXT_WIDTH + 1);
+    const ext_bboard L6 = cell >> (EXT_WIDTH + 1);
+    const ext_bboard L7 = cell << (EXT_WIDTH - 1);
+    const ext_bboard L8 = cell >> (EXT_WIDTH - 1);
+    ext_bboard S0, S1, S2, S3;
+    S0 = S1 = S2 = S3 = 0;
 
     S0 = ~(L1 | L2);
     S1 = L1 ^ L2;
@@ -65,46 +64,29 @@ ext_bboard gol(ext_bboard cell) {
     S1 = (S1 & ~L3) | (S0 & L3);
     S0 = S0 & ~L3;
 
-    S4 = S3 & L4;
     S3 = (S3 & ~L4) | (S2 & L4);
     S2 = (S2 & ~L4) | (S1 & L4);
     S1 = (S1 & ~L4) | (S0 & L4);
     S0 = S0 & ~L4;
 
-    S5 = S4 & L5;
-    S4 = (S4 & ~L5) | (S3 & L5);
     S3 = (S3 & ~L5) | (S2 & L5);
     S2 = (S2 & ~L5) | (S1 & L5);
     S1 = (S1 & ~L5) | (S0 & L5);
     S0 = S0 & ~L5;
 
-    S6 = S5 & L6;
-    S5 = (S5 & ~L6) | (S4 & L6);
-    S4 = (S4 & ~L6) | (S3 & L6);
     S3 = (S3 & ~L6) | (S2 & L6);
     S2 = (S2 & ~L6) | (S1 & L6);
     S1 = (S1 & ~L6) | (S0 & L6);
     S0 = S0 & ~L6;
 
-    S7 = S6 & L7;
-    S6 = (S6 & ~L7) | (S5 & L7);
-    S5 = (S5 & ~L7) | (S4 & L7);
-    S4 = (S4 & ~L7) | (S3 & L7);
     S3 = (S3 & ~L7) | (S2 & L7);
     S2 = (S2 & ~L7) | (S1 & L7);
     S1 = (S1 & ~L7) | (S0 & L7);
     S0 = S0 & ~L7;
 
-    S7 = (S7 & ~L8) | (S6 & L8);
-    S6 = (S6 & ~L8) | (S5 & L8);
-    S5 = (S5 & ~L8) | (S4 & L8);
-    S4 = (S4 & ~L8) | (S3 & L8);
     S3 = (S3 & ~L8) | (S2 & L8);
     S2 = (S2 & ~L8) | (S1 & L8);
-    // ~ S1 = (S1 & ~L8) | (S0 & L8);
-    // ~ S0 = S0 & ~L8;
 
-    // ~ return (((S2 & cell) | S3) & 8289792);
     return (((S2 & cell) | S3));
 }
 
