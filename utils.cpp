@@ -38,9 +38,10 @@ void generate_table(int* X, int dim) {
 void print_table(int* A, int dim) {
     for (int i = 0; i < dim; ++i) {
         for (int j = 0; j < dim; ++j) {
-            fprintf(stderr, "%s%d "ANSI_COLOR_RESET, A[i * dim + j] ? ANSI_COLOR_BLUE : ANSI_COLOR_RED, A[i * dim + j]);
+            fprintf(stderr, "%s%d "ANSI_COLOR_RESET, A[i * dim + j] ? ANSI_COLOR_BLUE : ANSI_COLOR_RED,
+                    A[i * dim + j]);
         }
-        fprintf(stderr,"\n");
+        fprintf(stderr, "\n");
     }
-    fprintf(stderr,"\n");
+    fprintf(stderr, "\n");
 }

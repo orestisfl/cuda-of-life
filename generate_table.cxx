@@ -3,8 +3,7 @@
 #include <time.h>
 #include "utils.h"
 
-int main(int argc, char **argv)
-{
+int main(int argc, char** argv) {
     if (argc != 2) {
         printf("usage: %s [dimension]\n", argv[0]);
         exit(1);
