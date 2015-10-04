@@ -28,7 +28,7 @@ static inline void cudaCheckErrors(const char msg[], const char file[], int line
 #define DEFAULT_OPTY 16
 #define DEFAULT_OPTX 16
 void best_block_size(int* optx, int* opty) {
-    #ifdef CUDA_65
+    #ifdef CUDA_OCCOPT
     // The launch configurator returned block size
     int block_size = 0;
     // The minimum grid size needed to achieve the maximum occupancy for a full device launch
@@ -37,7 +37,12 @@ void best_block_size(int* optx, int* opty) {
                                        (void*)calculate_next_generation,  0, 0);
 
     *optx = (int) ceil(sqrt(block_size));
-    *opty = *optx;
+
+    while (block_size % *optx) {
+        (*optx)--;
+    }
+
+    *opty = block_size / *optx;
     #else
     *optx = DEFAULT_OPTX;
     *opty = DEFAULT_OPTY;
@@ -127,13 +132,14 @@ int main(int argc, char** argv) {
     //    zero_k <<< 1, 1 >>> (d_table, dim);
     for (int i = 0; i < n_runs; ++i) {
         if (no_rem) {
-            calculate_next_generation_no_rem <<< grid, block, (block.x + 2) * (block.y + 2) * sizeof(bboard)>>> (d_board, d_help,
-                                                          dim, dim_board_w, dim_board_h, pitch);
-        }
-        else {
-            calculate_next_generation <<< grid, block>>> (d_board, d_help,
-                                                          dim, dim_board_w, dim_board_h, pitch,
-                                                          remaining_cells_w, remaining_cells_h);
+            calculate_next_generation_no_rem <<< grid, block,
+                                             (block.x + 2) * (block.y + 2) * sizeof(bboard) >>> (d_board, d_help,
+                                                                                                 dim, dim_board_w, dim_board_h, pitch);
+        } else {
+            calculate_next_generation <<< grid, block, (block.x + 2) * (block.y + 2) * sizeof(bboard) >>>
+            (d_board, d_help,
+             dim, dim_board_w, dim_board_h, pitch,
+             remaining_cells_w, remaining_cells_h);
         }
         cudaCheckErrors("calculating next generation failed", __FILE__, __LINE__);
         swap_boards(&d_board, &d_help);
