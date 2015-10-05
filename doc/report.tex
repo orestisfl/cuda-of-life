@@ -1,0 +1,55 @@
+%&preamble
+% Save static part as preamble.tex and use command:
+% xelatex -ini -shell-escape -job-name="preamble" "&xelatex preamble.tex\dump"
+% to produce preamble.fmt
+
+% Only for xelatex and lualatex. It provides an automatic and unified interface to feature-rich AAT and OpenType fonts.
+% https://ctan.org/pkg/fontspec
+\usepackage{fontspec}
+% fix bug with fontspec: http://tex.stackexchange.com/a/102610/78791
+\ExplSyntaxOn
+\let\tl_length:n\tl_count:n
+\ExplSyntaxOff
+
+\setmainfont{DejaVu Serif}
+\renewcommand{\contentsname}{Περιεχόμενα}
+\renewcommand{\listfigurename}{Λίστα Σχημάτων}
+\renewcommand{\figurename}{Σχήμα}
+\renewcommand{\lstlistingname}{Καταχώρηση}
+\renewcommand{\lstlistlistingname}{List of \lstlistingname s}
+
+%\includeonly{results}
+
+\title{3η Εργασία στα Παράλληλα και Διανεμημένα Συστήματα\\
+Game of Life}
+\author{Χρήστος Τσιριγώτης, 7792\\
+Ορέστης Φλώρος-Μαλιβίτσης, 7796\\
+  Τομέας Ηλεκτρονικής,\\
+  Τμήμα Ηλ. Μηχανικών / Μηχανικών ΗΥ,\\
+  Αριστοτέλειο Πανεπιστήμιο Θεσσαλονίκης}
+\begin{document}
+\maketitle
+\tableofcontents
+\listoffigures
+\newpage
+
+% Δομή του Project
+\chapter*{Δομή του Project}
+
+\begin{description}
+	\item[doc/] Φάκελος με τα \LaTeX{} αρχεία για την παραγωγή της αναφοράς.
+	\item[doc/plots/] Φάκελος με τα αρχεία των γραφημάτων.
+	\item[game-of-life.pdf] Η εκφώνηση.
+	\item[report.pdf] Αυτή η αναφορά.
+\end{description}
+
+\noindent Για build τρέχουμε:
+\begin{lstlisting}[style=Bash]
+$ mkdir -p bin
+$ cd bin
+$ cmake ..
+$ make
+\end{lstlisting}
+\include{intro}
+
+\end{document}
