@@ -1,4 +1,4 @@
-#include "../utils.h"
+#include "utils.h"
 #include <cuda_runtime.h>
 
 #define T_I 0

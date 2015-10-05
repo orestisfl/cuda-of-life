@@ -61,7 +61,7 @@ __global__ void calculate_next_generation(const bboard* d_a,
 #define up_n T_I
 #define down_i (i + 1)
 #define down_n (C_I)
-#include "code_includes/kafrila.c"
+#include "code_includes/outter_loop.c"
 #undef i
 
 
@@ -70,7 +70,7 @@ __global__ void calculate_next_generation(const bboard* d_a,
 #define up_n C_I
 #define down_i (i + 1)
 #define down_n C_I
-#include "code_includes/kafrila.c"
+#include "code_includes/outter_loop.c"
     }
 
 #define i (limit_i - 1)
@@ -78,7 +78,7 @@ __global__ void calculate_next_generation(const bboard* d_a,
 #define up_n C_I
 #define down_i 0
 #define down_n B_I
-#include "code_includes/kafrila.c"
+#include "code_includes/outter_loop.c"
 #undef i
     bboard* row_result = (bboard*)((char*)d_result + major_i * pitch);
     row_result[major_j] = value;
