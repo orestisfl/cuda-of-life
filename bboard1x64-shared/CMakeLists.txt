@@ -5,7 +5,7 @@ FIND_PACKAGE(CUDA REQUIRED)
 INCLUDE(FindCUDA)
 
 execute_process(COMMAND nvcc -x cu ${CMAKE_CURRENT_SOURCE_DIR}/devInfo.c -o ${CMAKE_BINARY_DIR}/devInfo.out)
-execute_process(COMMAND optirun ./devInfo.out OUTPUT_VARIABLE CUDA_ARCH)
+execute_process(COMMAND ./devInfo.out OUTPUT_VARIABLE CUDA_ARCH)
 execute_process(COMMAND rm -f ${CMAKE_BINARY_DIR}/devInfo.out)
 message("Cuda architecture:  ${CUDA_ARCH}")
 LIST(APPEND CUDA_NVCC_FLAGS -gencode arch=compute_${CUDA_ARCH},code=sm_${CUDA_ARCH})
