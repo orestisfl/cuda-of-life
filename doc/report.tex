@@ -18,8 +18,7 @@
 \renewcommand{\lstlistingname}{Καταχώρηση}
 \renewcommand{\lstlistlistingname}{List of \lstlistingname s}
 
-%\includeonly{results}
-
+\date{05/10/2015}
 \title{3η Εργασία στα Παράλληλα και Διανεμημένα Συστήματα\\
 Game of Life}
 \author{Χρήστος Τσιριγώτης, 7792\\
@@ -33,12 +32,13 @@ Game of Life}
 \listoffigures
 \newpage
 
-% Δομή του Project
 \chapter*{Δομή του Project}
 
 \begin{description}
+	\item[bboard*/] Φάκελοι με τις διάφορες εκδοχές σε bitfields.
+	\item[bin/] Φάκελος με τα binaries των διάφορων εκδόσεων. Το build έγινε στον diades.
 	\item[doc/] Φάκελος με τα \LaTeX{} αρχεία για την παραγωγή της αναφοράς.
-	\item[doc/plots/] Φάκελος με τα αρχεία των γραφημάτων.
+	\item[single/] Φάκελος με τις εκδοχές σε cpu, CUDA 1 cell per thread.
 	\item[game-of-life.pdf] Η εκφώνηση.
 	\item[report.pdf] Αυτή η αναφορά.
 \end{description}
@@ -51,5 +51,7 @@ $ cmake ..
 $ make
 \end{lstlisting}
 \include{intro}
+\include{code-explanation}
+\include{results}
 
 \end{document}

@@ -1,0 +1,181 @@
+\chapter{Υλοποίηση σε CUDA}
+
+Υλοποιήθηκαν οι εξής εκδόσεις του προγράμματος:
+
+\begin{enumerate}
+\item Σειριακός κώδικας (single/cpu1.c)
+\item Κώδικας σε Openmp μαζί με διάφορα micro-optimizations (single/omp.c).
+\item Cuda ένα κελί ανά νήμα (single/cuda-single.cu).
+\item Cuda Πολλαπλά κελιά ανά νήμα: υλοποίηση σε bitboard 32-bit (bboard2d).
+\item Cuda Πολλαπλά κελιά ανά νήμα: υλοποίηση σε bitboard 32-bit με shared memory (bboard2d-shared).
+\item Cuda Πολλαπλά κελιά ανά νήμα: υλοποίηση σε bitfields 64-bit (bboard1x64).
+\item Cuda Πολλαπλά κελιά ανά νήμα: υλοποίηση σε bitfields 64-bit με shared memory (bboard1x64-shared).
+\end{enumerate}
+
+Η υλοποίηση της σειριακής, openmp και ένα κελί ανά νήμα υλοποίησης είναι αρκετά απλή και δεν
+περιγράφεται. Οι 4 τελευταίες εκδόσεις λειτουργούν με παρόμοιο τρόπο αλλά
+η ανάπτυξή τους διαχωρίστηκε από ένα σημείο και μετά
+και για αυτό αντιμετωπίζονται σαν ξεχωριστά project
+(διαφορετικό CMakelists.txt, διαφορετικός φάκελος κτλπ).
+
+Τα bitboards επιλέχτηκαν καθώς ελαττώνουν την χρήση της global μνήμης σύμφωνα με τον μέγεθός τους
+και επιτρέπουν την αποφυγή for και if block μέσω της χρήσης bitwise πράξεων.
+
+\begin{sloppypar}
+Η μετατροπή από κανονικό σε "tiled" πίνακα γίνεται στα αρχεία converters.cu
+με την βοήθεια των συναρτήσεων \lstinline!convert_from_tiled()!
+και \lstinline!convert_to_tiled()!.
+Ο τύπος των δεδομένων σε tiled μορφή είναι \lstinline!bboard!
+και στα αρχεία utils.h ορίζονται διάφορα macro για την προσπέλαση των bits.
+Η πρόσβαση στην global μνήμη της συσκευής γίνεται μέσω της χρήσης της \lstinline!cudaMallocPitch()!
+που θεωρείται καλύτερη για την πρόσβαση σε δισδιάστατους πίνακες.
+Στην global μνήμη αποθηκεύονται δύο πίνακες,
+\lstinline!bboard* d_board! και
+\lstinline!bboard* d_help!.
+Ο πρώτος κρατάει το αποτέλεσμα της τρέχουσας γενιάς
+και ο δεύτερος χρησιμοποιείται για τον υπολογισμό της επόμενης.
+\end{sloppypar}
+
+\begin{sloppypar}
+Ο υπολογισμός της κάθε γενιάς γίνεται στα αρχεία calculator.cu μέσω της \lstinline!calculate_next_generation()!.
+\end{sloppypar}
+
+\section{bboard2d}
+\begin{sloppypar}
+Στον πίνακα \lstinline!bboard neighbors[3][3]! αποθηκεύονται τα γειτονικά tiles του κάθε thread.
+Έτσι, στην θέση [1][1] είναι τα τοπικό tile,
+στην θέση [0][0] το πάνω αριστερά,
+στην θέση [2][1] το κάτω κ.ο.κ.
+\end{sloppypar}
+\begin{sloppypar}
+Στην έκδοση χωρίς χρήση shared memory το κάθε thread γεμίζει τα 9 κελιά του \lstinline!neighbors! με απευθείας πρόσβαση στην global μνήμη.
+Στην έκδοση με shared memory, το κάθε thread γεμίζει μια θέση που του αναλογεί από τον πίνακα
+\lstinline!__shared__ bboard tiles[]! και
+τα threads που βρίσκονται στα σύνορα του block αναλαμβάνουν να γεμίσουν τις θέσεις που
+αντιστοιχούν στα tiles με τα οποία συνορεύει το block.
+Τέλος, μετά την \lstinline!__syncthreads();! οι θέσεις του \lstinline!neighbors! γεμίζονται
+μέσω της πρόσβασης στον \lstinline!tiles!.
+\end{sloppypar}
+
+\begin{sloppypar}
+Εδώ, υπάρχει μια διαφοροποίηση ανάλογα με το αν η διάσταση $N$ του πίνακα διαιρείται τέλεια με το 8.
+Όταν αυτό ισχύει χρησιμοποιείται η συνάρτηση \lstinline!calculate_next_generation_no_rem()!
+από την \lstinline!main()! αλλιώς η \lstinline!calculate_next_generation()!.
+Αυτό συμβαίνει γιατί η μέθοδος με τις bitwise πράξεις της πρώτης είναι δυσκολότερο να εφαρμοστεί και στην δεύτερη.
+\end{sloppypar}
+
+Στην \lstinline!calculate_next_generation()! ο υπολογισμός γίνεται με απλή for στις διαστάσεις
+\lstinline!WIDTH! και \lstinline!HEIGHT! του bitboard.
+Εφαρμόζονται μερικές μικρο-βελτιώσεις με την χρήση του preprocessor ώστε να μεταφερθούν οι
+οριακές περιπτώσεις εκτός της for και να αποφευχθούν μερικές if.
+
+Στην \lstinline!calculate_next_generation_no_rem()! αρχικά εφαρμόζονται μάσκες και bitwise
+πράξει στα στοιχεία του πίνακα \lstinline!neighbors! ώστε να ενωθούν σε ένα μεγαλύτερο bitboard τύπου \lstinline!ext_bboard!. 
+Για παράδειγμα αν έχουμε τον εξής πίνακα \lstinline!neighbors!:\\
+\begin{tabular}{ | c | c | c | c | c | c | c | c |}
+\hline
+1 & 1 & 1 & 0 & 0 & 1 & 0 & 1 \\ \hline
+1 & 0 & 1 & 0 & 1 & 1 & 0 & 1 \\ \hline
+1 & 0 & 1 & 0 & 0 & 0 & 1 & 0 \\ \hline
+1 & 1 & 1 & 0 & 1 & 1 & 1 & \cellcolor{blue!25}0 \\ \hline
+\end{tabular} \
+\begin{tabular}{ | c | c | c | c | c | c | c | c |}
+\hline
+1 & 1 & 1 & 1 & 0 & 0 & 1 & 0 \\ \hline
+1 & 1 & 1 & 0 & 0 & 0 & 1 & 0 \\ \hline
+1 & 0 & 1 & 0 & 1 & 0 & 1 & 0 \\ \hline
+\cellcolor{blue!25}1 & \cellcolor{blue!25}0 & \cellcolor{blue!25}0 & \cellcolor{blue!25}1 & \cellcolor{blue!25}0 & \cellcolor{blue!25}0 & \cellcolor{blue!25}1 & \cellcolor{blue!25}0 \\ \hline
+\end{tabular} \
+\begin{tabular}{ | c | c | c | c | c | c | c | c |}
+\hline
+0 & 0 & 1 & 1 & 1 & 0 & 0 & 0 \\ \hline
+1 & 1 & 0 & 1 & 0 & 0 & 0 & 1 \\ \hline
+0 & 1 & 0 & 0 & 1 & 0 & 1 & 1 \\ \hline
+\cellcolor{blue!25}1 & 0 & 1 & 0 & 1 & 0 & 0 & 1 \\ \hline
+\end{tabular} \\
+\begin{tabular}{ | c | c | c | c | c | c | c | c |}
+\hline
+1 & 0 & 1 & 0 & 0 & 0 & 0 & \cellcolor{blue!25}1 \\ \hline
+0 & 0 & 0 & 0 & 0 & 1 & 1 & \cellcolor{blue!25}1 \\ \hline
+0 & 1 & 1 & 0 & 1 & 1 & 1 & \cellcolor{blue!25}1 \\ \hline
+1 & 1 & 1 & 0 & 0 & 1 & 1 & \cellcolor{blue!25}0 \\ \hline
+\end{tabular} \
+\begin{tabular}{ | c | c | c | c | c | c | c | c |}
+\hline
+1 & 1 & 0 & 1 & 0 & 1 & 0 & 1 \\ \hline
+1 & 0 & 0 & 0 & 1 & 1 & 1 & 0 \\ \hline
+0 & 1 & 1 & 1 & 1 & 0 & 1 & 0 \\ \hline
+1 & 0 & 1 & 0 & 1 & 1 & 0 & 1 \\ \hline
+\end{tabular} \
+\begin{tabular}{ | c | c | c | c | c | c | c | c |}
+\hline
+\cellcolor{blue!25}1 & 0 & 0 & 1 & 1 & 0 & 1 & 1 \\ \hline
+\cellcolor{blue!25}0 & 0 & 0 & 0 & 0 & 0 & 0 & 1 \\ \hline
+\cellcolor{blue!25}0 & 1 & 1 & 1 & 0 & 0 & 1 & 0 \\ \hline
+\cellcolor{blue!25}0 & 0 & 0 & 1 & 1 & 1 & 1 & 0 \\ \hline
+\end{tabular} \\
+\begin{tabular}{ | c | c | c | c | c | c | c | c |}
+\hline
+0 & 1 & 1 & 1 & 1 & 1 & 1 & \cellcolor{blue!25}1 \\ \hline
+1 & 1 & 1 & 1 & 1 & 0 & 1 & 1 \\ \hline
+1 & 1 & 0 & 1 & 1 & 0 & 1 & 0 \\ \hline
+1 & 0 & 0 & 0 & 0 & 0 & 0 & 1 \\ \hline
+\end{tabular} \
+\begin{tabular}{ | c | c | c | c | c | c | c | c |}
+\hline
+\cellcolor{blue!25}1 & \cellcolor{blue!25}0 & \cellcolor{blue!25}1 & \cellcolor{blue!25}0 & \cellcolor{blue!25}1 & \cellcolor{blue!25}1 & \cellcolor{blue!25}1 & \cellcolor{blue!25}1 \\ \hline
+1 & 0 & 0 & 0 & 0 & 0 & 0 & 1 \\ \hline
+1 & 1 & 0 & 0 & 1 & 1 & 0 & 1 \\ \hline
+1 & 0 & 1 & 0 & 1 & 0 & 0 & 1 \\ \hline
+\end{tabular} \
+\begin{tabular}{ | c | c | c | c | c | c | c | c |}
+\hline
+\cellcolor{blue!25}1 & 1 & 1 & 0 & 1 & 1 & 1 & 0 \\ \hline
+1 & 0 & 0 & 0 & 1 & 0 & 1 & 1 \\ \hline
+1 & 1 & 0 & 1 & 0 & 1 & 1 & 1 \\ \hline
+0 & 0 & 0 & 0 & 1 & 1 & 0 & 0 \\ \hline
+\end{tabular}
+\begin{center}
+	Θα πρέπει αν μεταφερθεί ως εξής:\\
+	\begin{tabular}{ | c | c | c | c | c | c | c | c | c | c |}
+	\hline
+	\cellcolor{blue!25}0 & \cellcolor{blue!25}1 & \cellcolor{blue!25}1 & \cellcolor{blue!25}1 & \cellcolor{blue!25}0 & \cellcolor{blue!25}1 & \cellcolor{blue!25}1 & \cellcolor{blue!25}1 & \cellcolor{blue!25}0 & \cellcolor{blue!25}1 \\ \hline
+	\cellcolor{blue!25}1 & 1 & 1 & 0 & 1 & 0 & 1 & 0 & 1 & \cellcolor{blue!25}1 \\ \hline
+	\cellcolor{blue!25}1 & 1 & 0 & 0 & 0 & 1 & 1 & 1 & 0 & \cellcolor{blue!25}0\\ \hline
+	\cellcolor{blue!25}1 & 0 & 1 & 1 & 1 & 1 & 0 & 1 & 0 & \cellcolor{blue!25}0\\ \hline
+	\cellcolor{blue!25}0 & 1 & 0 & 1 & 0 & 1 & 1 & 0 & 1 & \cellcolor{blue!25}0\\ \hline
+	\cellcolor{blue!25}1 & \cellcolor{blue!25}1 & \cellcolor{blue!25}0 & \cellcolor{blue!25}1 & \cellcolor{blue!25}0 & \cellcolor{blue!25}1 & \cellcolor{blue!25}1 & \cellcolor{blue!25}1 & \cellcolor{blue!25}1 & \cellcolor{blue!25}1\\ \hline
+	\end{tabular} \
+\end{center}
+
+Αυτό γίνεται μέσω της \lstinline!bboard_to_ext()!:
+\begin{lstlisting}[caption={Extend bboard}, escapechar=$, breaklines=true]
+__device__
+bboard ext_to_bboard(ext_bboard val) {
+    bboard res = 0;
+    for (int i = 1; i < EXT_HEIGHT - 1; i++) {
+        for (int j = 1; j < EXT_WIDTH - 1; j++) {
+            if (EXT_BOARD_IS_SET(val, i, j)) SET_BOARD(res, i - 1, j - 1);
+        }
+    }
+    return res;
+}
+
+...
+
+ext_bboard res = 0;
+for (int i = 0; i < 3; i++) {
+    for (int j = 0; j < 3; j++) {
+        res |= bboard_to_ext(neighbors[i][j], i, j);
+    }
+}
+\end{lstlisting}
+
+Ο τελικός υπολογισμός γίνεται μέσω της \lstinline!gol()!.
+Οι πράξεις που γίνονται στην συνάρτηση βρέθηκαν \href{http://www.onjava.com/pub/a/onjava/2005/02/02/bitsets.html?page=2}{εδώ}.
+Ουσιαστικά, υπολογίζονται τα bits που έχουν άθροισμα ζωντανών γειτόνων 3 και 2.
+
+\section{bboard1x64}
+
+Λειτουργεί με παρόμοιο τρόπο με διαφορές στον πίνακα \lstinline!neighbors! και τις bitwise πράξεις που εκτελούνται.
+Εδώ, δεν διαχωρίζεται η συνάρτηση ανάλογα με το αν διαιρείται το $N$ με το 8.
