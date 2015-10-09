@@ -135,8 +135,7 @@ int main(int argc, char** argv) {
   cudaEventRecord(stop, 0);
   cudaEventSynchronize(stop);
   cudaEventElapsedTime(&time, start, stop);
-  printf(ANSI_COLOR_RED"CUDA-new"ANSI_COLOR_RESET" time to run: "
-      ANSI_COLOR_RED"%f"ANSI_COLOR_RESET" ms\n", time);
+  printf("%f\n", time);
 
   convert_from_tiled <<< grid, block >>> (d_table, d_board, dim, pitch);
   cudaCheckErrors("convert_from_tiled failed", __FILE__, __LINE__);
