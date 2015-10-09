@@ -54,11 +54,11 @@ int main(int argc, char** argv) {
 
     if (argc == 4) N_RUNS = atoi(argv[3]);
 
-    printf("Reading %dx%d table from file %s\n", N, N, filename);
+    fprintf(stderr, "Reading %dx%d table from file %s\n", N, N, filename);
     table = (int*) malloc(total_size * sizeof(int));
     help_table = (int*) malloc(total_size * sizeof(int));
     read_from_file(table, filename, N, N);
-    printf("Finished reading table\n");
+    fprintf(stderr, "Finished reading table\n");
 
     struct timeval startwtime, endwtime;
     gettimeofday(&startwtime, NULL);
@@ -69,7 +69,6 @@ int main(int argc, char** argv) {
     double time = (double)((endwtime.tv_usec - startwtime.tv_usec)
                            / 1.0e6 + endwtime.tv_sec - startwtime.tv_sec);
 
-    printf(ANSI_COLOR_RED"OMP"ANSI_COLOR_RESET
-           " time to run: "ANSI_COLOR_RED"%f"ANSI_COLOR_RESET" ms\n", time * 1000);
+    printf("%f\n", time*1000);
     save_table(table, N, N, "single-results.bin");
 }

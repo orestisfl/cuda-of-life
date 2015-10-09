@@ -5,7 +5,7 @@
 #include <omp.h>
 #include "utils.h"
 
-#define NTHREADS 6
+#define NTHREADS 8
 
 int count_neighbors(int x0, int x1, int x2, int y0, int y1, int y2);
 
@@ -78,13 +78,13 @@ int main(int argc, char** argv) {
         N_RUNS = atoi(argv[3]);
 
     #ifndef TEST
-    printf("Reading %dx%d table from file %s\n", N, N, filename);
+    fprintf(stderr, "Reading %dx%d table from file %s\n", N, N, filename);
     #endif  // TEST
     table = (int*) malloc(total_size * sizeof(int));
     help_table = (int*) malloc(total_size * sizeof(int));
     read_from_file(table, filename, N, N);
     #ifndef TEST
-    printf("Finished reading table\n");
+    fprintf(stderr, "Finished reading table\n");
     #endif  // TEST
     #ifdef PRINT
     print_table(table, N, N);
@@ -103,8 +103,7 @@ int main(int argc, char** argv) {
     gettimeofday(&endwtime, NULL);
     double time = (double)((endwtime.tv_usec - startwtime.tv_usec)
                            / 1.0e6 + endwtime.tv_sec - startwtime.tv_sec);
-    printf(ANSI_COLOR_RED"OMP"ANSI_COLOR_RESET" time to run: "
-           ANSI_COLOR_RED"%f"ANSI_COLOR_RESET" ms\n", time * 1000);
+    printf("%f\n", time*1000);
     save_table(table, N, N, "omp-results.bin");
     free(table);
     free(help_table);

@@ -8,13 +8,13 @@
 void read_from_file(int* X, const char* filename, int M, int N) {
     FILE* fp = fopen(filename, "r+");
     int size = fread(X, sizeof(int), M * N, fp);
-    printf("elements: %d\n", size);
+    fprintf(stderr, "elements: %d\n", size);
     fclose(fp);
 }
 
 void save_table(int* X, int M, int N, const char* filename) {
     FILE* fp;
-    printf("Saving table in file %s\n", filename);
+    fprintf(stderr, "Saving table in file %s\n", filename);
     fp = fopen(filename, "w+");
     fwrite(X, sizeof(int), M * N, fp);
     fclose(fp);

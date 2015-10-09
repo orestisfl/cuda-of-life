@@ -67,10 +67,10 @@ extern "C" {
 
         char* filename = argv[1];
         int* table;
-        printf("Reading %dx%d table from file %s\n", N, N, filename);
+        fprintf(stderr, "Reading %dx%d table from file %s\n", N, N, filename);
         table = (int*) malloc(mem_size);
         read_from_file(table, filename, N, N);
-        printf("Finished reading table\n");
+        fprintf(stderr,"Finished reading table\n");
 
         int t_count = find_thread_count(total_elements);
         dim3 thread_count(t_count);
@@ -101,7 +101,7 @@ extern "C" {
         cudaEventRecord(stop, 0) ;
         cudaEventSynchronize(stop) ;
         cudaEventElapsedTime(&time, start, stop) ;
-        printf("CUDA time to run:  %f s \n", time / 1000);
+        printf("%f\n", time);
 
         cudaMemcpy(table, d_table, total_elements * sizeof(int), cudaMemcpyDeviceToHost);
         cudaDeviceReset();
