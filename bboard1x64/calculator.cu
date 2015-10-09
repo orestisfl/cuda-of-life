@@ -16,7 +16,7 @@ __global__ void calculate_next_generation(const bboard* d_a,
   if (major_i >= dim_board_h) return;
   if (major_j >= dim_board_w) return;
 
-  bboard a[9];
+  bboard neighbors[9];
   {
     const int major_l = (major_j - 1 + dim_board_w) % dim_board_w;
     const int major_r = (major_j + 1) % dim_board_w;
@@ -25,15 +25,15 @@ __global__ void calculate_next_generation(const bboard* d_a,
     bboard* row_c = (bboard*)((char*)d_a + major_i * pitch);
     bboard* row_t = (bboard*)((char*)d_a + major_t * pitch);
     bboard* row_b = (bboard*)((char*)d_a + major_b * pitch);
-    a[0] = row_c[major_j];
-    a[1] = row_c[major_l];
-    a[2] = row_c[major_r];
-    a[3] = row_t[major_j];
-    a[4] = row_t[major_l];
-    a[5] = row_t[major_r];
-    a[6] = row_b[major_j];
-    a[7] = row_b[major_l];
-    a[8] = row_b[major_r];
+    neighbors[0] = row_c[major_j];
+    neighbors[1] = row_c[major_l];
+    neighbors[2] = row_c[major_r];
+    neighbors[3] = row_t[major_j];
+    neighbors[4] = row_t[major_l];
+    neighbors[5] = row_t[major_r];
+    neighbors[6] = row_b[major_j];
+    neighbors[7] = row_b[major_l];
+    neighbors[8] = row_b[major_r];
   }
 
   const bool is_edge_l = (major_j == 0);
@@ -42,42 +42,42 @@ __global__ void calculate_next_generation(const bboard* d_a,
   const char bring_left = WIDTH - 1 - __mul24(remaining_cells_w, is_edge_l);
   const bboard mask = (bboard)-1 >> __mul24(remaining_cells_w, is_edge_r);
 
-  a[4] = (a[3] << 1) | (a[4] >> bring_left);
-  a[5] = (a[3] >> 1) | (a[5] << bring_right);
-  a[1] = (a[0] << 1) | (a[1] >> bring_left);
-  a[2] = (a[0] >> 1) | (a[2] << bring_right);
-  a[7] = (a[6] << 1) | (a[7] >> bring_left);
-  a[8] = (a[6] >> 1) | (a[8] << bring_right);
+  neighbors[4] = (neighbors[3] << 1) | (neighbors[4] >> bring_left);
+  neighbors[5] = (neighbors[3] >> 1) | (neighbors[5] << bring_right);
+  neighbors[1] = (neighbors[0] << 1) | (neighbors[1] >> bring_left);
+  neighbors[2] = (neighbors[0] >> 1) | (neighbors[2] << bring_right);
+  neighbors[7] = (neighbors[6] << 1) | (neighbors[7] >> bring_left);
+  neighbors[8] = (neighbors[6] >> 1) | (neighbors[8] << bring_right);
 
   bboard A[4], A_h[3];
 
-  A[0] = a[1] ^ a[2];
-  A[1] = a[1] & a[2];
+  A[0] = neighbors[1] ^ neighbors[2];
+  A[1] = neighbors[1] & neighbors[2];
 
-  A_h[0] = A[0] ^ a[3];
-  A_h[1] = A[1] ^ (A[0] & a[3]);
+  A_h[0] = A[0] ^ neighbors[3];
+  A_h[1] = A[1] ^ (A[0] & neighbors[3]);
 
-  A[0] = A_h[0] ^ a[4];
-  A[1] = A_h[1] ^ (A_h[0] & a[4]);
-  A[2] = A_h[1] & A_h[0] & a[4];
+  A[0] = A_h[0] ^ neighbors[4];
+  A[1] = A_h[1] ^ (A_h[0] & neighbors[4]);
+  A[2] = A_h[1] & A_h[0] & neighbors[4];
 
-  A_h[0] = A[0] ^ a[5];
-  A_h[1] = A[1] ^ (A[0] & a[5]);
-  A_h[2] = A[2] ^ (A[1] & A[0] & a[5]);
+  A_h[0] = A[0] ^ neighbors[5];
+  A_h[1] = A[1] ^ (A[0] & neighbors[5]);
+  A_h[2] = A[2] ^ (A[1] & A[0] & neighbors[5]);
 
-  A[0] = A_h[0] ^ a[6];
-  A[1] = A_h[1] ^ (A_h[0] & a[6]);
-  A[2] = A_h[2] ^ (A_h[1] & A_h[0] & a[6]);
+  A[0] = A_h[0] ^ neighbors[6];
+  A[1] = A_h[1] ^ (A_h[0] & neighbors[6]);
+  A[2] = A_h[2] ^ (A_h[1] & A_h[0] & neighbors[6]);
 
-  A_h[0] = A[0] ^ a[7];
-  A_h[1] = A[1] ^ (A[0] & a[7]);
-  A_h[2] = A[2] ^ (A[1] & A[0] & a[7]);
+  A_h[0] = A[0] ^ neighbors[7];
+  A_h[1] = A[1] ^ (A[0] & neighbors[7]);
+  A_h[2] = A[2] ^ (A[1] & A[0] & neighbors[7]);
 
-  A[0] = A_h[0] ^ a[8];
-  A[1] = A_h[1] ^ (A_h[0] & a[8]);
-  A[2] = A_h[2] ^ (A_h[1] & A_h[0] & a[8]);
-  A[3] = A_h[2] & A_h[1] & A_h[0] & a[8];
+  A[0] = A_h[0] ^ neighbors[8];
+  A[1] = A_h[1] ^ (A_h[0] & neighbors[8]);
+  A[2] = A_h[2] ^ (A_h[1] & A_h[0] & neighbors[8]);
+  A[3] = A_h[2] & A_h[1] & A_h[0] & neighbors[8];
 
   bboard* row_result = (bboard*)((char*)d_result + major_i * pitch);
-  row_result[major_j] = ~A[3] & ~A[2] & A[1] & ((~A[0] & a[0]) | A[0]) & mask;
+  row_result[major_j] = ~A[3] & ~A[2] & A[1] & ((~A[0] & neighbors[0]) | A[0]) & mask;
 }
